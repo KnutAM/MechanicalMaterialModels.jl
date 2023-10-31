@@ -1,8 +1,12 @@
-# The evolution of the plastic multiplier for a rate-dependent material is 
-# ∂λ/∂t = f(Φ)
-# With backward Euler, 
-# λ-λⁿ = Δt*f(Φ) with residual 
-# rΦ = λ- (λⁿ+Δt*f(Φ))
+"""
+    RateIndependent()
+
+The evolution of the plastic multiplier for a rate-dependent material is given by 
+the so-called KKT loading/unloading conditions
+```math
+\\dot{\\lambda} \\geq 0, \\quad \\varPhi \\leq 0, \\quad \\dot{\\lambda}\\varPhi = 0
+```
+"""
 struct RateIndependent end
 
 MMB.get_num_params(::RateIndependent) = 0
@@ -19,6 +23,16 @@ abstract type OverstressFunction end
 
 yield_residual(ratelaw::OverstressFunction, Φ, Δλ, Δt, σy) = Δλ - Δt*overstress_function(ratelaw, Φ, σy)
 
+"""
+    NortonOverstress(;tstar, nexp)
+
+The norton overstress function is defined as 
+```math
+\\eta(\\varPhi, \\sigma_\\mathrm{y}) = \\frac{1}{t_*} \\left\\langle \\frac{\\varPhi}{\\sigma_\\mathrm{y}} \\right\\rangle^n
+```
+where the material parameters ``t_*`` (`tstar`) and ``n`` (`nexp`) represent the 
+relaxation time and overstress sensitivty.  
+"""
 struct NortonOverstress{TT,TN} <: OverstressFunction
     tstar::TT
     nexp::TN

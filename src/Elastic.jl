@@ -29,7 +29,8 @@ where
 - `E`: Young's modulus, ``E``
 - `ν`: Poisson's ratio, ``\\nu``
 
-LinearElastic{:cubicsymmetry}(; C1111::T, C1122::T, C1212::T) where {T}
+
+    LinearElastic{:cubicsymmetry}(; C1111::T, C1122::T, C1212::T) where {T}
 
 Creates a LinearElastic type, hence ``\\boldsymbol{\\sigma} = \\boldsymbol{C}:\\boldsymbol{\\epsilon}``, where
 ``\\boldsymbol{C}`` possesses cubic symmetry along the coordinate axes. It is defined as

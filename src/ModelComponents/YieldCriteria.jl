@@ -42,7 +42,7 @@ Base.show(io::IO, ::MIME"text/plain", yl::VonMises) = println(io, "VonMises with
 Create a Drucker-Prager yield criterion, with initial yield limit, ``Y_0``, as `Y0`,
 and pressure sensitivity `B`. The yield criterion is defined as 
 ```math
-\\Phi = \\sqrt{\\frac{3}{2}} \\left| \\text{dev} \\left( \\boldsymbol{\\sigma}_\\mathrm{red} \\right) \\right| - B\\tr\\left( \\boldsymbol{\\sigma}_\\mathrm{red} \\right) - \\left[ Y_0 + \\Delta Y \\right] = 0
+\\Phi = \\sqrt{\\frac{3}{2}} \\left| \\mathrm{dev} \\left( \\boldsymbol{\\sigma}_\\mathrm{red} \\right) \\right| - B\\mathrm{tr}\\left( \\boldsymbol{\\sigma}_\\mathrm{red} \\right) - \\left[ Y_0 + \\Delta Y \\right] = 0
 ```
 where ``\\boldsymbol{\\sigma}_\\mathrm{red}`` is the reduced (by kinematic hardening) stress tensor, and ``\\Delta Y`` the change of the initial 
 yield limit due to isotropic hardening (i.e. ``\\kappa``).
