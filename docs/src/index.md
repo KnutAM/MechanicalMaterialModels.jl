@@ -4,7 +4,8 @@ CurrentModule = MechanicalMaterialModels
 
 # MechanicalMaterialModels
 
-Documentation for [MechanicalMaterialModels](https://github.com/KnutAM/MechanicalMaterialModels.jl).
+Implementations of mechanical (stress-strain) material models following 
+the `MaterialModelsBase.jl` interface. 
 
 
 ## Elasticity
