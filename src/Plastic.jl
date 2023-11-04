@@ -249,14 +249,6 @@ function calculate_elastic_strain(old::PlasticState, ϵ, ν, Δλ)
     return ϵ - (old.ϵₚ + Δλ*ν)
 end
 
-effective_vm(σ::AbstractTensor, β::Tuple) = effective_vm(σ, sum(β))
-function effective_vm(σ::AbstractTensor, β::AbstractTensor)
-    σ_red_dev = dev(σ) - β
-    σ_vm = vonmises(σ_red_dev)
-    ν = σ_red_dev * ((3/2)/σ_vm) 
-    return σ_vm, ν
-end
-
 # Functions for conversion between material and parameter vectors
 function MMB.get_num_params(m::Plastic)
     return sum((
