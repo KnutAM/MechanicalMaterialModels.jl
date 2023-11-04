@@ -44,6 +44,7 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
     ∂R∂pᴹ = diff_helper.∂R∂pᴹ
     ∂s∂Xᴹ = diff_helper.∂s∂Xᴹ
     ∂s∂ⁿsᴹ = diff_helper.∂s∂ⁿsᴹ
+    ∂s∂pᴹ = diff_helper.∂s∂pᴹ
     
     # Precalculations
     ⁿs_vector = tomandel(ⁿs)
@@ -70,16 +71,18 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
 
     # Differentiate the new state 
     ## Calculate ∂s∂Xᴹ first
-    s_from_X(X_vector) = tomandel(get_plastic_result(frommandel(typeof(X), X_vector), ⁿs)[2])
+    s_from_X(X_vector) = tomandel(get_plastic_result(m, frommandel(typeof(X), X_vector), ⁿs)[2])
     ForwardDiff.jacobian!(∂s∂Xᴹ, s_from_X, tomandel(X))
     ∂s∂Xᴹ_times_∂R∂Xinvᴹ = ∂s∂Xᴹ*∂R∂Xinvᴹ
     ## dsdϵ
     deriv.dsdϵ .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂ϵᴹ    # ∂s∂ϵ = 0 (get_plastic_result does not take the strain as argument)
     ## dsdⁿs
-    s_from_state(old_vector) = tomandel(get_plastic_result(X, frommandel(typeof(ⁿs), old_vector))[2])
+    s_from_state(old_vector) = tomandel(get_plastic_result(m, X, frommandel(typeof(ⁿs), old_vector))[2])
     ForwardDiff.jacobian!(∂s∂ⁿsᴹ, s_from_state, ⁿs_vector)
     deriv.dsdⁿs .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂ⁿsᴹ + ∂s∂ⁿsᴹ
     ## dsdp
-    deriv.dsdp .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂pᴹ    # ∂s∂p = 0 (get_plastic_result does not take the material as argument)
-
+    s_from_p(p_vector) = tomandel(get_plastic_result(vector2material(p_vector, m), X, ⁿs)[2])
+    ForwardDiff.jacobian!(∂s∂pᴹ, s_from_p, p)
+    deriv.dsdp .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂pᴹ + ∂s∂pᴹ
+    
 end

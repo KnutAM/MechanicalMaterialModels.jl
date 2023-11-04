@@ -203,13 +203,12 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
             inv_J_σσ = frommandel(SymmetricTensor{4,3}, inv(dRdx))
             typeof(m.elastic) <: LinearElastic || error("Only LinearElastic elasticity supported") # Otherwise, the following expression is not true
             dσdϵ = inv_J_σσ ⊡ dσdϵ_elastic
-            σ, new = get_plastic_result(x, old) # In paper denote this as f_y(X(ϵ,ⁿs,p), ϵ, ⁿs, p)
-                                                # But in this implementation, only f_y(X(ϵ,ⁿs,p), ⁿs)
+            σ, new = get_plastic_result(m, x, old) # In general, f_y(X(ϵ,ⁿs,p), ϵ, ⁿs, p)
+                                                   # But here,   f_y(X(ϵ,ⁿs,p), ⁿs, p), suffices
             update_extras!(extras, x, dRdx)
             return σ, dσdϵ, new
         else
-            @show ϵ
-            throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge"))
+            throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge, ϵ = ", ϵ))
         end
     end
 end
@@ -240,18 +239,14 @@ function initial_guess(m::Plastic, old::PlasticState, ϵ)
     return PlasticResidual(σ_trial, Δλ, old.κ, old.β)
 end
 
-function get_plastic_result(x::PlasticResidual, old::PlasticState)
-    σ_red_dev = dev(x.σ) - sum(x.β)
-    ϵₚ = calculate_plastic_strain(old, σ_red_dev * ((3/2)/vonmises(σ_red_dev)), x.Δλ)
+function get_plastic_result(m::Plastic, x::PlasticResidual, old::PlasticState)
+    ν = effective_stress_gradient(m.yield,  x.σ - sum(x.β))
+    ϵₚ = old.ϵₚ + x.Δλ*ν
     return x.σ, PlasticState(ϵₚ, x.κ, x.β)
 end
 
 function calculate_elastic_strain(old::PlasticState, ϵ, ν, Δλ)
-    return ϵ - calculate_plastic_strain(old, ν, Δλ)
-end
-
-function calculate_plastic_strain(old::PlasticState, ν, Δλ)
-    return old.ϵₚ + Δλ*ν
+    return ϵ - (old.ϵₚ + Δλ*ν)
 end
 
 effective_vm(σ::AbstractTensor, β::Tuple) = effective_vm(σ, sum(β))
