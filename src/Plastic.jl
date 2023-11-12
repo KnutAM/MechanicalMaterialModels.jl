@@ -179,7 +179,7 @@ function elastic_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::AbstractMat
     return σ,dσdϵ
 end
 
-function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::PlasticState{NKin,NIso}, Δt=nothing, cache=allocate_material_cache(m), extras::AbstractExtraOutput=NoExtraOutput(); options = nothing) where {NKin,NIso}
+function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::PlasticState{NKin,NIso}, Δt, cache, extras) where {NKin,NIso}
 
     σ_trial, dσdϵ_elastic = elastic_response(m, ϵ, old)
     Φ_trial = yield_criterion(m.yield, σ_trial-sum(old.β), sum(old.κ))

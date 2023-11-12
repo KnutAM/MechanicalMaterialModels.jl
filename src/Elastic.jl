@@ -93,7 +93,7 @@ function LinearElastic{:cubicsymmetry}(; C1111, C1122, C1212)
     return LinearElastic{T, :cubicsymmetry, 3}(C, SVector(C1111, C1122, C1212))
 end
 
-function MMB.material_response(m::LinearElastic, ϵ::SymmetricTensor{2,3}, old=NoMaterialState(), Δt=nothing, cache=allocate_material_cache(m), extras::AbstractExtraOutput=NoExtraOutput(); options=Dict{Symbol, Any}())
+function MMB.material_response(m::LinearElastic, ϵ::SymmetricTensor{2,3}, old=NoMaterialState(), args...)
     σ = calculate_stress(m, ϵ)
     return σ, m.C, old
 end
