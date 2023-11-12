@@ -1,4 +1,4 @@
-@testset "ViscoPlasticCombined" begin
+@testset "ViscoPlastic" begin
     elast = LinearElastic(; E=210.e3, ν=0.3)
     σ_y0 = 200.
     kin = ArmstrongFrederick(;Hkin=10.e3, β∞=300.0)

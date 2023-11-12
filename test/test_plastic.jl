@@ -33,6 +33,17 @@
     s11, σ, dσdϵ, state, ϵ = run_normal(m2, Δϵ21, N)
     @test MechMat.vonmises(σ) ≈ σ_y0
 
+    # Linear hardening
+    mlh = Plastic(elastic=e, yield=VonMises(σ_y0), isotropic=Voce(Hiso=Hiso, κ∞=Inf), kinematic=ArmstrongFrederick(Hkin=Hk1, β∞=Inf))
+    ϵy = σ_y0/E
+    Δϵ = ϵy/N
+    s11, σ, dσdϵ, state, ϵ = run_normal(mlh, Δϵ*(N+1), N+1; stress_state=UniaxialStress())
+    H = Hk1 + Hiso
+    Hp = E*H/(E+H)
+    @test s11[end-1] ≈ σ_y0
+    @test dσdϵ[1,1,1,1] ≈ Hp 
+    @test (s11[end] - s11[end-1])/Δϵ ≈ Hp
+
     # Non-convergent material, check error throws correctly
     m2 = Plastic(elastic=e, yield=-σ_y0, isotropic=(Voce(Hiso=0.0, κ∞=1.0),), kinematic=(ArmstrongFrederick(Hkin=-10*E, β∞=-1000*E),))
     @test_throws NoLocalConvergence run_shear(m2, Δϵ21, N)

@@ -51,11 +51,12 @@ struct DruckerPrager{T} <: YieldCriterion
     Y0::T
     B::T
 end
+DruckerPrager(;Y0, B) = DruckerPrager(Y0, B)
+
 initial_yield_limit(yc::DruckerPrager) = yc.Y0
 
-function effective_stress(yc::DruckerPrager, σred::SymmetricTensor{2,3})
-    σreddev = dev(σred)
-    return sqrt(3*norm(σreddev)/2) - yc.B*tr(σred)
+function effective_stress(yc::DruckerPrager, σred::SymmetricTensor{2,3,T}) where T
+    return sqrt(T(3)/2)*norm(dev(σred)) - yc.B*tr(σred)
 end
 
 MMB.get_num_params(::DruckerPrager) = 2

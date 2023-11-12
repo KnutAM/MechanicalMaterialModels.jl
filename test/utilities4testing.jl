@@ -13,12 +13,11 @@ end
 
 run_normal(m, ϵmax::Number, numsteps; kwargs...) = run_normal(m, Vector(range(0,ϵmax;length=numsteps+1)); kwargs...)
 
-function run_normal(m, ϵ11_vec; Δt = NaN)
+function run_normal(m, ϵ11_vec; Δt = NaN, stress_state=UniaxialNormalStress())
     s11 = zeros(length(ϵ11_vec))
     local ϵ_full = zero(SymmetricTensor{2,3})
     local σ, dσdϵ, state
     old_state = initial_material_state(m)
-    stress_state = UniaxialNormalStress()
     cache = allocate_material_cache(m)
     for (i, ϵ11) = enumerate(ϵ11_vec)
         ϵ = SymmetricTensor{2,3}((i,j)-> i==j==1 ? ϵ11 : ϵ_full[i,j])
