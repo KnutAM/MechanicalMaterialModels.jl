@@ -24,4 +24,12 @@
     @test σ ≈ σ_verify
     σfun(ϵ) = material_response(m, ϵ, initial_material_state(m))[1]
     @test Tensors.gradient(σfun, ϵ) ≈ dσdϵ
+
+    # Show methods 
+    @test contains(show_as_string(LinearElastic(E=2.0, ν=0.3)), "Isotropic")
+    @test contains(show_as_string(LinearElastic{:general}(m.C)), "Fully anisotropic")
+    m_cubic = LinearElastic{:cubicsymmetry}(; C1111=1., C1122=2., C1212=3.)
+    @test contains(show_as_string(m_cubic), "Cubic symmetric")
+    m_custom = LinearElastic{Float64,:custom,5}(m.C, rand(5))
+    @test contains(show_as_string(m_custom), "custom")
 end

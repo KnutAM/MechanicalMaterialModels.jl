@@ -47,4 +47,23 @@
     # Non-convergent material, check error throws correctly
     m2 = Plastic(elastic=e, yield=-σ_y0, isotropic=(Voce(Hiso=0.0, κ∞=1.0),), kinematic=(ArmstrongFrederick(Hkin=-10*E, β∞=-1000*E),))
     @test_throws NoLocalConvergence run_shear(m2, Δϵ21, N)
+
+    # Show (note, different conditionals for 1 or more of iso/kin hard)
+    show_str = show_as_string(m1)
+    @test contains(show_str, "Plastic")
+    @test contains(show_str, "LinearElastic")
+    @test contains(show_str, "VonMises")
+    @test contains(show_str, "Voce")
+    @test contains(show_str, "Swift")
+    @test contains(show_str, "ArmstrongFrederick")
+    @test contains(show_str, "Delobelle")
+    @test contains(show_str, "Rate independent")
+
+    show_str = show_as_string(Plastic(;elastic=e, yield=DruckerPrager(1.0, 0.1), isotropic=Voce(0.0, 1.0), kinematic=ArmstrongFrederick(0.0, 1.0), overstress=NortonOverstress(1.0, 1.0)))
+    @test contains(show_str, "Plastic")
+    @test contains(show_str, "LinearElastic")
+    @test contains(show_str, "DruckerPrager")
+    @test contains(show_str, "Voce")
+    @test contains(show_str, "ArmstrongFrederick")
+    @test contains(show_str, "Norton overstress")
 end

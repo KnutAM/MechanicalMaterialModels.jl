@@ -80,5 +80,5 @@ function Base.show(io::IO, ::MIME"text/plain", h::Voce)
     println(io, "Voce with H=$(h.Hiso) and κ∞=$(h.κ∞)")
 end
 function Base.show(io::IO, ::MIME"text/plain", h::Swift)
-    println(io, "Voce with K=$(h.K), λ0=$(h.λ0), and n=$(h.n)")
+    println(io, "Swift with K=$(h.K), λ0=$(h.λ0), and n=$(h.n)")
 end

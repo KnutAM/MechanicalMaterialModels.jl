@@ -179,11 +179,6 @@ function elastic_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::AbstractMat
     return σ,dσdϵ
 end
 
-function iso_yield_limit(m::Plastic, state::Union{AbstractMaterialState, PlasticResidual})
-    minyield = 40.0 # Bound hardcoded here for convenience, should be lifted out for better flexibility later
-    return smoothbound(m.σ_y0 + sum(state.κ), minyield, minyield/2)
-end
-
 function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::PlasticState{NKin,NIso}, Δt=nothing, cache=allocate_material_cache(m), extras::AbstractExtraOutput=NoExtraOutput(); options = nothing) where {NKin,NIso}
 
     σ_trial, dσdϵ_elastic = elastic_response(m, ϵ, old)

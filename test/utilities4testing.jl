@@ -69,3 +69,17 @@ function obtain_numerical_material_derivative!(deriv, m::LinearElastic, ϵ, old,
         tmp .= FiniteDiff.finite_difference_jacobian(fun, getfield(x0, z))
     end
 end
+
+function test_conversion(mbase)
+    v0 = [rand() for _ in 1:MMB.get_num_params(mbase)]
+    v1 = similar(v0)
+    m = vector2material(v0, mbase)
+    material2vector!(v1, m)
+    @test v0 ≈ v1
+end
+
+function show_as_string(value, mime=MIME"text/plain"())
+    io = IOBuffer()
+    show(IOContext(io), mime, value)
+    return String(take!(io))
+end

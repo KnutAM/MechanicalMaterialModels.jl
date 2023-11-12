@@ -27,6 +27,10 @@
     @test db == MMB.vector2material([Hkin, β∞, δ], db)
     @test ow == MMB.vector2material([Hkin, β∞, m], ow)
 
+    # Check show methods 
+    @test contains(show_as_string(af), "ArmstrongFrederick with")
+    @test contains(show_as_string(db), "Delobelle with")
+    @test contains(show_as_string(ow), "OhnoWang with")
 end
 
 @testset "IsotropicHardening" begin
@@ -60,4 +64,8 @@ end
     
     @test dκdλ ≈ MechMat.get_evolution(swift, κ)
     @test κ0 ≈ MechMat.get_initial_value(swift)
+
+    # Show
+    @test contains(show_as_string(voce), "Voce with")
+    @test contains(show_as_string(swift), "Swift with")
 end 
