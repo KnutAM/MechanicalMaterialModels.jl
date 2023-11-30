@@ -1,8 +1,8 @@
 """
 Plastic(;elastic, yield, isotropic, kinematic, overstress)
 
-A plasticity model with modular elastic law, yield criterion, 
-multiple modular isotropic and kinematic hardening contributions,
+A small-strain plasticity model with modular elastic laws, yield criteria, 
+multiple isotropic and kinematic hardening contributions,
 and either rate-independent or viscoplastic response.
 # Arguments
 - `elastic::AbstractMaterial`: Elastic law, see e.g. [`LinearElastic`](@ref)
@@ -20,7 +20,7 @@ The elastic law is specified by `m.elastic` and is evaluated by giving it the el
 
 A yield criterion of the type 
 ```math
-\\varPhi = f\\left( \\boldsymbol{\\sigma} - \\boldsymbol{\\beta} \\right) - \\left[Y_0 - \\kappa\\right]
+\\varPhi = f\\left( \\boldsymbol{\\sigma} - \\boldsymbol{\\beta} \\right) - \\left[Y_0 + \\kappa\\right]
 ```
 is assumed. Here, ``\\boldsymbol{\\beta} = \\sum_{i=1}^{N_\\mathrm{kin}} \\boldsymbol{\\beta}_i`` is the total back-stress, 
 and ``\\kappa = \\sum_{i=1}^{N_\\mathrm{iso}} \\kappa_i`` is the total isotropic hardening stress. The initial yield limit 
