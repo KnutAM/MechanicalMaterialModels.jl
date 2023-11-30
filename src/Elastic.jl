@@ -1,39 +1,36 @@
-# Temporary solution untill Julia#51906 is solved
+"""
+    LinearElastic(; E, ν)
+    LinearElastic{:isotropic}(; E, ν)
+
+Create an isotropic `LinearElastic` material with Young's modulus, `E`, and Poisson's ratio `ν`, such that
+```math
+\\boldsymbol{\\sigma} = 2\\mu \\boldsymbol{\\epsilon} + \\lambda \\mathrm{tr}(\\boldsymbol{\\epsilon}) \\boldsymbol{I} \\\\
+```
+where the Lamé parameters, ``\\mu`` and ``\\lambda`` are defined as
+```math
+\\mu = \\frac{E}{2(1+\\nu)}, \\quad \\lambda=\\frac{E\\nu}{(1+\\nu)(1-2\\nu)}
+```
+"""
+LinearElastic(::Val{:isotropic})
+# Temporary solution of "dispatch" docs untill Julia#51906 is solved
 # https://github.com/JuliaLang/julia/issues/51906
 
 """
     LinearElastic(C::SymmetricTensor{4,3})
     LinearElastic{:general}(C::SymmetricTensor{4,3})
 
-Creates a general linear elastic material (`symmetry=none`) where 
+Create a general `LinearElastic` material with the 4th order elastic stiffness tensor
+``\\boldsymbol{C}``, such that 
 ``\\boldsymbol{\\sigma} = \\boldsymbol{C}:\\boldsymbol{\\epsilon}``. 
-``\\boldsymbol{C}`` is the 4th order elastic stiffness tensor. 
+"""
+LinearElastic(::Val{:general})
 
-# Arguments
-- `C::SymmetricTensor{4,3}`: 4th order symmetric elastic stiffness tensor
-
-
-    LinearElastic(; E, ν)
-    LinearElastic{:isotropic}(; E, ν)
-
-Creates an isotropic LinearElastic material, such that
-```math
-\\boldsymbol{\\sigma} = 2\\mu \\boldsymbol{\\epsilon} + \\lambda \\mathrm{tr}(\\boldsymbol{\\epsilon}) \\boldsymbol{I} \\\\
-```
-where 
-```math
-\\mu = \\frac{E}{2(1+\\nu)}, \\quad \\lambda=\\frac{E\\nu}{(1+\\nu)(1-2\\nu)}
-```
-
-# Arguments
-- `E`: Young's modulus, ``E``
-- `ν`: Poisson's ratio, ``\\nu``
-
-
+"""
     LinearElastic{:cubicsymmetry}(; C1111::T, C1122::T, C1212::T) where {T}
 
-Creates a LinearElastic type, hence ``\\boldsymbol{\\sigma} = \\boldsymbol{C}:\\boldsymbol{\\epsilon}``, where
-``\\boldsymbol{C}`` possesses cubic symmetry along the coordinate axes. It is defined as
+Create a `LinearElastic` material where the stiffness tensor,
+``\\boldsymbol{C}``, possesses cubic symmetry along the coordinate axes.
+Using the 9-component Voigt notation, ``\\boldsymbol{C}`` can be expressed as
 
 ```math
 \\boldsymbol{C} = 
@@ -49,13 +46,9 @@ C_{1122} & C_{1122} & C_{1111} & 0 & 0 & 0 & 0 & 0 & 0 \\\\
 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 2C_{1212} \\\\
 \\end{bmatrix}
 ```
-
-# Arguments
-- `C1111`: The ``C_{1111}`` stiffness parameter
-- `C1122`: The ``C_{1122}`` stiffness parameter
-- `C1212`: The ``C_{1212}`` stiffness parameter
 """
-LinearElastic
+LinearElastic(::Val{:cubicsymmetry})
+
 
 struct LinearElastic{T, case, N} <: AbstractMaterial
     C::SymmetricTensor{4,3,T,36}

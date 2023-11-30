@@ -1,18 +1,25 @@
 """
-Plastic(;elastic, yield, isotropic, kinematic, overstress)
+    Plastic(;elastic, yield, isotropic, kinematic, overstress)
 
 A small-strain plasticity model with modular elastic laws, yield criteria, 
 multiple isotropic and kinematic hardening contributions,
 and either rate-independent or viscoplastic response.
-# Arguments
-- `elastic::AbstractMaterial`: Elastic law, see e.g. [`LinearElastic`](@ref)
-- `yield::YieldCriterion`: Yield criterion, including the initial yield limit. If yield::Real is given, `VonMises(yield)` is used. 
-- `isotropic::Union{AbstractIsotropicHardening,Tuple}`: Isotropic hardening laws, see e.g. [`Voce`](@ref)
-- `kinematic::Union{AbstractKinematicHardening,Tuple}`: Kinematic hardening laws, see e.g. [`ArmstrongFrederick`](@ref)
-- `overstress`::Union{RateIndependent,OverstressFunction}: Rate dependence, see e.g. [`NortonOverstress`](@ref)
+# Keyword arguments
+- `elastic::AbstractMaterial`\\
+  Elastic law, see e.g. [`LinearElastic`](@ref)
+- `yield::YieldCriterion`\\
+  Yield criterion, including the initial yield limit. If `yield::Real` is given, `VonMises(yield)` is used. 
+- `isotropic::Union{AbstractIsotropicHardening,Tuple}`\\
+  Isotropic hardening laws, see e.g. [`Voce`](@ref)
+- `kinematic::Union{AbstractKinematicHardening,Tuple}`\\
+  Kinematic hardening laws, see e.g. [`ArmstrongFrederick`](@ref)
+- `overstress::Union{RateIndependent,OverstressFunction}`\\
+  Rate dependence, see e.g. [`NortonOverstress`](@ref)\\
+  Defaults to `RateIndependent()`
 
-The model response is given by the laws in `elastic`, `yield`, `isotropic`, `kinematic`, and `overstress`.
-The generic model equations are described below. 
+# Theory
+While the exact model response is given by the laws in `elastic`, `yield`, `isotropic`, `kinematic`, and `overstress`,
+the generic model equations are described below. 
 
 The stress is calculated from the elastic strains, ``\\boldsymbol{\\epsilon}_\\mathrm{e}``, obtained via the 
 additive decomposition, ``\\boldsymbol{\\epsilon} = \\boldsymbol{\\epsilon}_\\mathrm{e} + \\boldsymbol{\\epsilon}_\\mathrm{p}``. 

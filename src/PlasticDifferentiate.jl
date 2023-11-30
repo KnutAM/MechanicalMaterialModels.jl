@@ -50,7 +50,7 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
     ⁿs_vector = tomandel(ⁿs)
     ∂R∂Xinvᴹ = inv(∂R∂Xᴹ)
 
-    R_from_strain(ϵ_vector) = tomandel(residual(X, m, ⁿs, frommandel(shapeof(ϵ), ϵ_vector), Δt, cache.resid))
+    R_from_strain(ϵ_vector) = tomandel(residual(X, m, ⁿs, frommandel(baseof(ϵ), ϵ_vector), Δt, cache.resid))
     ForwardDiff.jacobian!(∂R∂ϵᴹ, R_from_strain, tomandel(ϵ))
 
     R_from_state(old_vector) = tomandel(residual(X, m, frommandel(typeof(ⁿs), old_vector), ϵ, Δt, cache.resid))
