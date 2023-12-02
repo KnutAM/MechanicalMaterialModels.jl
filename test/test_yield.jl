@@ -10,6 +10,7 @@
         @test MechMat.effective_stress(yc, σ_normal) ≈ s
         @test MechMat.effective_stress(yc, σ_shear)  ≈ s
         @test MechMat.effective_stress_gradient(yc, σ_rand) ≈ (3/2)*dev(σ_rand)/MechMat.effective_stress(yc, σ_rand)
+        @test MechMat.effective_stress_gradient(yc, σ_rand) ≈ gradient(s->MechMat.effective_stress(yc, s), σ_rand)
         # Homogeneous of order 1
         @test MechMat.effective_stress(yc, π*σ_rand) ≈ π*MechMat.effective_stress(yc, σ_rand)
 
@@ -31,9 +32,10 @@
         yc_vm = VonMises(Y0)
         # Check same for deviatoric stress
         @test MechMat.effective_stress(yc, dev(σ_rand)) ≈ MechMat.effective_stress(yc_vm, dev(σ_rand))
-        # Check direction 
+        # Check direction (both using AD and analytical, in case analytical is implemented later)
         ν_vm = (3/2)*dev(σ_rand)/MechMat.effective_stress(yc_vm, σ_rand)
         @test MechMat.effective_stress_gradient(yc, σ_rand) ≈ ν_vm - B*one(ν_vm)
+        @test MechMat.effective_stress_gradient(yc, σ_rand) ≈ gradient(s->MechMat.effective_stress(yc, s), σ_rand)
         # Homogeneous of order 1
         @test MechMat.effective_stress(yc, π*σ_rand) ≈ π*MechMat.effective_stress(yc, σ_rand)
         

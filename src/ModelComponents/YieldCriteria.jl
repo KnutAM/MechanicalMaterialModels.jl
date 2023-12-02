@@ -27,6 +27,8 @@ initial_yield_limit(yc::VonMises) = yc.Y0
 
 effective_stress(::VonMises, σred) = vonmises(σred)
 
+effective_stress_gradient(yc::VonMises, σred) = (3/2)*dev(σred)/effective_stress(yc, σred) # More efficient than using AD above
+
 MMB.get_num_params(::VonMises) = 1
 MMB.vector2material(v::AbstractVector, ::VonMises; offset=0) = VonMises(v[offset+1])
 function MMB.material2vector!(v::Vector, yl::VonMises; offset=0)

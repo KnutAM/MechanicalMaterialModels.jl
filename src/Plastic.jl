@@ -196,18 +196,19 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
         return σ_trial, dσdϵ_elastic, old
     else
         x = initial_guess(m, old, ϵ)
-        rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
-        x_vector = getx(cache.newton); tomandel!(x_vector, x)
+        rf!(r_vector, x_vector) = vector_residual!(xx->residual(xx, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
+        x_vector = getx(cache.newton)
+        tomandel!(x_vector, x)
         x_vector, dRdx, converged = newtonsolve(x_vector, rf!, cache.newton)
         if converged
-            x = frommandel(PlasticResidual{NKin,NIso}, x_vector)
-            check_solution(x)
+            x_sol = frommandel(PlasticResidual{NKin,NIso}, x_vector)
+            check_solution(x_sol)
             inv_J_σσ = frommandel(SymmetricTensor{4,3}, inv(dRdx))
             typeof(m.elastic) <: LinearElastic || error("Only LinearElastic elasticity supported") # Otherwise, the following expression is not true
             dσdϵ = inv_J_σσ ⊡ dσdϵ_elastic
-            σ, new = get_plastic_result(m, x, old) # In general, f_y(X(ϵ,ⁿs,p), ϵ, ⁿs, p)
-                                                   # But here,   f_y(X(ϵ,ⁿs,p), ⁿs, p), suffices
-            update_extras!(extras, x, dRdx)
+            σ, new = get_plastic_result(m, x_sol, old) # In general, f_y(X(ϵ,ⁿs,p), ϵ, ⁿs, p)
+                                                       # But here,   f_y(X(ϵ,ⁿs,p), ⁿs, p), suffices
+            update_extras!(extras, x_sol, dRdx)
             return σ, dσdϵ, new
         else
             throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge, ϵ = ", ϵ))
@@ -229,9 +230,9 @@ function residual(x::PlasticResidual{NKin,NIso}, m::Plastic, old::PlasticState, 
 
     Rσ = x.σ - calculate_stress(m.elastic, ϵₑ)       # Using the specific elastic law
     Rλ = yield_residual(m.overstress, Φ, x.Δλ, Δt, σy)
-    Rκ = ntuple(i-> x.κ[i] - old.κ[i] - x.Δλ * get_evolution(m.isotropic[i], x.κ[i]), NIso)
-    Rβ = ntuple((i) -> x.β[i] - old.β[i] - x.Δλ * get_evolution(m.kinematic[i], ν, x.β[i]), NKin)
-
+    Rκ = map((ih, κ, κold) -> κ - κold - x.Δλ * get_evolution(ih, κ), m.isotropic, x.κ, old.κ)
+    Rβ = map((kh, β, βold) -> β - βold - x.Δλ * get_evolution(kh, ν, β), m.kinematic, x.β, old.β)
+    
     return PlasticResidual(Rσ, Rλ, Rκ, Rβ)
 end
 
