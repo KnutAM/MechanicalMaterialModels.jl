@@ -203,12 +203,13 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
         if converged
             x_sol = frommandel(PlasticResidual{NKin,NIso}, x_vector)
             check_solution(x_sol)
-            inv_J_σσ = frommandel(SymmetricTensor{4,3}, inv(dRdx))
+            update_extras!(extras, x_sol, dRdx) # Use dRdx before calling inv!
+            inv_dRdx = Newton.inv!(dRdx, cache.newton)
+            inv_J_σσ = frommandel(SymmetricTensor{4,3}, inv_dRdx)
             typeof(m.elastic) <: LinearElastic || error("Only LinearElastic elasticity supported") # Otherwise, the following expression is not true
             dσdϵ = inv_J_σσ ⊡ dσdϵ_elastic
             σ, new = get_plastic_result(m, x_sol, old) # In general, f_y(X(ϵ,ⁿs,p), ϵ, ⁿs, p)
                                                        # But here,   f_y(X(ϵ,ⁿs,p), ⁿs, p), suffices
-            update_extras!(extras, x_sol, dRdx)
             return σ, dσdϵ, new
         else
             throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge, ϵ = ", ϵ))
