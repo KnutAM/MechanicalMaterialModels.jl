@@ -24,7 +24,7 @@ abstract type OverstressFunction end
 yield_residual(ratelaw::OverstressFunction, Φ, Δλ, Δt, σy) = Δλ - Δt*overstress_function(ratelaw, Φ, σy)
 
 """
-    NortonOverstress(;tstar, nexp)
+    NortonOverstress(; tstar, nexp)
 
 The norton overstress function is defined as 
 ```math
@@ -33,11 +33,10 @@ The norton overstress function is defined as
 where the material parameters ``t_*`` (`tstar`) and ``n`` (`nexp`) represent the 
 relaxation time and overstress sensitivty.  
 """
-struct NortonOverstress{TT,TN} <: OverstressFunction
+@kwdef struct NortonOverstress{TT,TN} <: OverstressFunction
     tstar::TT
     nexp::TN
 end
-NortonOverstress(;tstar, nexp) = NortonOverstress(tstar, nexp)
 
 overstress_function(ratelaw::NortonOverstress, Φ, σy) = Φ<=0 ? zero(Φ) : (1/ratelaw.tstar)*(Φ/σy)^ratelaw.nexp
 

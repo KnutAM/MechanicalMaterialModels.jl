@@ -10,7 +10,7 @@ default_yield_criteria(yc::YieldCriterion) = yc
 default_yield_criteria(v::Real) = VonMises(v)
 
 """
-    VonMises(Y0)
+    VonMises(; Y0)
 
 Create a von Mises yield criterion with initial yield limit, ``Y_0``, as `Y0`.
 The yield criterion is then defined as
@@ -20,7 +20,7 @@ The yield criterion is then defined as
 where ``\\boldsymbol{\\sigma}_\\mathrm{red}`` is the reduced (by kinematic hardening) stress tensor, and ``\\Delta Y`` the change of the initial 
 yield limit due to isotropic hardening (i.e. ``\\kappa``).
 """
-struct VonMises{T} <: YieldCriterion
+@kwdef struct VonMises{T} <: YieldCriterion
     Y0::T
 end
 initial_yield_limit(yc::VonMises) = yc.Y0
@@ -39,7 +39,7 @@ end
 Base.show(io::IO, ::MIME"text/plain", yl::VonMises) = println(io, "VonMises with Y0=", yl.Y0)
 
 """
-    DruckerPrager(;Y0, B)
+    DruckerPrager(; Y0, B)
 
 Create a Drucker-Prager yield criterion, with initial yield limit, ``Y_0``, as `Y0`,
 and pressure sensitivity `B`. The yield criterion is defined as 
@@ -49,11 +49,10 @@ and pressure sensitivity `B`. The yield criterion is defined as
 where ``\\boldsymbol{\\sigma}_\\mathrm{red}`` is the reduced (by kinematic hardening) stress tensor, and ``\\Delta Y`` the change of the initial 
 yield limit due to isotropic hardening (i.e. ``\\kappa``).
 """
-struct DruckerPrager{T} <: YieldCriterion
+@kwdef struct DruckerPrager{T} <: YieldCriterion
     Y0::T
     B::T
 end
-DruckerPrager(;Y0, B) = DruckerPrager(Y0, B)
 
 initial_yield_limit(yc::DruckerPrager) = yc.Y0
 

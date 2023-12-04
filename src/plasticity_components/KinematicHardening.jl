@@ -2,7 +2,7 @@
 abstract type AbstractKinematicHardening{T} end
 
 """
-    ArmstrongFrederick(Hkin, β∞)
+    ArmstrongFrederick(; Hkin, β∞)
 
 Armstrong-Frederick kinematic hardening law (doi: 10.1179/096034007X207589)
 
@@ -14,11 +14,10 @@ g_{\\mathrm{kin},i}(\\nu, \\boldsymbol{\\beta}_i) = H_\\mathrm{kin} (\\frac{2}{3
 - `Hkin`: Kinematic hardening modulus, ``H_\\mathrm{kin}``
 - `β∞`: Effective back-stress saturation value, ``\\beta_\\infty``
 """
-struct ArmstrongFrederick{T} <: AbstractKinematicHardening{T}
+@kwdef struct ArmstrongFrederick{T} <: AbstractKinematicHardening{T}
     Hkin::T     # Initial hardening modulus
     β∞::T       # Saturation stress
 end
-ArmstrongFrederick(;Hkin, β∞) = ArmstrongFrederick(Hkin, β∞)    # Keyword argument constructor
 
 function get_evolution(param::ArmstrongFrederick, ν::SecondOrderTensor, βᵢ::SecondOrderTensor)
     # (2/3)*Hkin(ν - (3/2)*βᵢ/β∞)
@@ -26,7 +25,7 @@ function get_evolution(param::ArmstrongFrederick, ν::SecondOrderTensor, βᵢ::
 end
 
 """
-    Delobelle(Hkin, β∞, δ)
+    Delobelle(; Hkin, β∞, δ)
 
 Kinematic hardening law according to Delobelle, which combines the Armstrong-Frederick law with the Burlet-Cailletaud law
 (doi: 10.1016/S0749-6419(95)00001-1)
@@ -44,12 +43,11 @@ g_{\\mathrm{kin},i}(\\nu, \\boldsymbol{\\beta}_i) = H_\\mathrm{kin} \\left[\\fra
 - `δ`: Amount of Armstrong-Frederick type of kinematic hardening, ``\\delta``
 
 """
-struct Delobelle{T} <: AbstractKinematicHardening{T}
+@kwdef struct Delobelle{T} <: AbstractKinematicHardening{T}
     Hkin::T     # Initial hardening modulus
     β∞::T       # Saturation stress
     δ::T        # Amount of Armstrong-Frederick hardening
 end
-Delobelle(;Hkin, β∞, δ) = Delobelle(Hkin, β∞, δ)    # Keyword argument constructor
 
 function get_evolution(param::Delobelle, ν::SecondOrderTensor, βᵢ::SecondOrderTensor)
     AF_Term = (param.δ/param.β∞) * βᵢ                        # Armstrong Frederick term
@@ -59,7 +57,7 @@ end
 
 
 """
-    OhnoWang(Hkin, β∞, m)
+    OhnoWang(; Hkin, β∞, m)
 
 Kinematic hardening law according to Ohno-Wang (doi: 10.1016/0749-6419(93)90042-O)
 
@@ -80,12 +78,11 @@ where ``\\langle x \\rangle`` is 0 if ``x\\leq 0`` and ``x`` if ``x>0``.
 - `m`: Exponent in the OhnoWang equation, ``m``
 
 """
-struct OhnoWang{T} <: AbstractKinematicHardening{T}
+@kwdef struct OhnoWang{T} <: AbstractKinematicHardening{T}
     Hkin::T     # Initial hardening modulus
     β∞::T       # Saturation stress
     m::T     # Ohno Wang exponent
 end
-OhnoWang(;Hkin, β∞, m) = OhnoWang(Hkin, β∞, m)    # Keyword argument constructor
 
 function get_evolution(param::OhnoWang{Tp}, ν::SecondOrderTensor, βᵢ::SecondOrderTensor{dim,Tβ}) where{Tp,Tβ,dim}
     β_vm = vonmises(βᵢ)

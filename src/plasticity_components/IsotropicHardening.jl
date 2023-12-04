@@ -21,18 +21,17 @@ or alternatively as differential equations
 - `κ∞`: Saturation hardening value, ``\\kappa_\\infty``
     
 """
-struct Voce{T} <: AbstractIsotropicHardening{T}
+@kwdef struct Voce{T} <: AbstractIsotropicHardening{T}
     Hiso::T     # Initial hardening modulus
     κ∞::T       # Saturation stress
 end
-Voce(;Hiso, κ∞) = Voce(Hiso, κ∞)    # Keyword argument constructor
 
 function get_evolution(param::Voce, κ::Number)
     return param.Hiso * (one(κ) - κ / param.κ∞)
 end
 
 """ 
-    Swift(K, λ0, n)
+    Swift(; K, λ0, n)
 
 Isotropic hardening by the Swift power law
 
@@ -46,13 +45,11 @@ Isotropic hardening by the Swift power law
 - `n`: ``n``
 
 """
-struct Swift{T} <:AbstractIsotropicHardening{T}
+@kwdef struct Swift{T} <:AbstractIsotropicHardening{T}
     K::T
     λ0::T
     n::T 
 end
-Swift(;K, λ0, n) = Swift(K, λ0, n)    # Keyword argument constructor
-
 
 function get_evolution(param::Swift, κ::Number)
     return param.K * param.n * (κ/param.K)^((param.n-1)/param.n)

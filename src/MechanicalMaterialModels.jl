@@ -1,6 +1,8 @@
 module MechanicalMaterialModels
 using Tensors, StaticArrays, ForwardDiff, LinearAlgebra
 
+import Base: @kwdef  # Note exported for Julia version < 1.9
+
 using MaterialModelsBase, Newton
 import MaterialModelsBase as MMB
 
@@ -8,16 +10,16 @@ import MaterialModelsBase as MMB
 include("utils.jl")
 
 # Hardening laws etc. 
-include("ModelComponents/YieldCriteria.jl")
+include("plasticity_components/YieldCriteria.jl")
 export VonMises, DruckerPrager
 
-include("ModelComponents/IsotropicHardening.jl")
+include("plasticity_components/IsotropicHardening.jl")
 export Voce, Swift
 
-include("ModelComponents/KinematicHardening.jl")
+include("plasticity_components/KinematicHardening.jl")
 export ArmstrongFrederick, Delobelle, OhnoWang
 
-include("ModelComponents/OverstressFunctions.jl")
+include("plasticity_components/OverstressFunctions.jl")
 export RateIndependent, NortonOverstress
 
 # Different material classes
