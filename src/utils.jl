@@ -17,12 +17,13 @@ e.g. `get_promoted_type(1, 1.f0)` is `Float32`
 get_promoted_type(args...) = promote_type(map(typeof, args)...)
 
 """ 
-    function vonmises(σ::SymmetricTensor{2,3})
+    function vonmises(σ::SecondOrderTensor{3})
 
 Calculate the von Mises effective stress for a 2nd order tensor
 """
-function vonmises(σ::SymmetricTensor{2,3,T}) where T
-    return sqrt(T(3)/2)*norm(dev(σ))
+function vonmises(σ::SecondOrderTensor{3}) where T
+    σ_dev = dev(σ)
+    return sqrt(3*(σ_dev ⊡ transpose(σ_dev))/2)
 end
 
 """

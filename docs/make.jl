@@ -16,6 +16,11 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Small Strains" => "small_strains.md",
+        "Finite Strains" => "finite_strains.md",
+        "Model Components" => "model_components.md",
+        "Utility Functions" => "utility_functions.md",
+        "Developer Docs" => "devdocs.md",
     ],
 )
 

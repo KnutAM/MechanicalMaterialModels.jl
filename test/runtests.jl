@@ -10,6 +10,8 @@ using Test
 
 include("utilities4testing.jl")
 
+include("test_hyperelastic.jl")
+
 include("test_elastic.jl")
 include("test_yield.jl")
 include("test_hardening.jl")

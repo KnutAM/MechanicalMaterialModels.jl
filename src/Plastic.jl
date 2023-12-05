@@ -17,51 +17,6 @@ and either rate-independent or viscoplastic response.
   Rate dependence, see e.g. [`NortonOverstress`](@ref)\\
   Defaults to `RateIndependent()`
 
-# Theory
-While the exact model response is given by the laws in `elastic`, `yield`, `isotropic`, `kinematic`, and `overstress`,
-the generic model equations are described below. 
-
-The stress is calculated from the elastic strains, ``\\boldsymbol{\\epsilon}_\\mathrm{e}``, obtained via the 
-additive decomposition, ``\\boldsymbol{\\epsilon} = \\boldsymbol{\\epsilon}_\\mathrm{e} + \\boldsymbol{\\epsilon}_\\mathrm{p}``. 
-The elastic law is specified by `m.elastic` and is evaluated by giving it the elastic strain. 
-
-A yield criterion of the type 
-```math
-\\varPhi = f\\left( \\boldsymbol{\\sigma} - \\boldsymbol{\\beta} \\right) - \\left[Y_0 + \\kappa\\right]
-```
-is assumed. Here, ``\\boldsymbol{\\beta} = \\sum_{i=1}^{N_\\mathrm{kin}} \\boldsymbol{\\beta}_i`` is the total back-stress, 
-and ``\\kappa = \\sum_{i=1}^{N_\\mathrm{iso}} \\kappa_i`` is the total isotropic hardening stress. The initial yield limit 
-is passed to the yield criterion along with potentially other parameters. 
-The evolution laws for ``\\boldsymbol{\\beta}_i`` and ``\\kappa_i`` are given by the kinematic and isotropic hardening laws.
-
-Associative plastic flow is used to obtain the plastic strains,
-```math
-\\dot{\\epsilon}_{\\mathrm{p}} = \\dot{\\lambda} \\left.\\frac{\\partial f}{\\partial \\boldsymbol{\\sigma}}\\right\\vert_{\\left( \\boldsymbol{\\sigma} - \\boldsymbol{\\beta} \\right)}
-= \\dot{\\lambda} \\boldsymbol{\\nu}
-```
-
-The isotropic hardening is formulated as
-```math
-\\kappa = \\sum_{i=1}^{N_{\\mathrm{iso}}} g_{\\mathrm{iso},i}(\\lambda)
-```
-where ``g_{\\mathrm{iso},i}(\\lambda)`` is specified by `m.isotropic[i]` (see [Isotropic hardening](@ref))
-
-Kinematic hardening is formulated as
-```math
-\\dot{\\boldsymbol{\\beta}}_i = \\dot{\\lambda} g_{\\mathrm{kin},i}(\\nu, \\boldsymbol{\\beta}_i)
-```
-where ``g_{\\mathrm{kin},i}(\\boldsymbol{\\nu}, \\boldsymbol{\\beta}_i)`` is specified by `m.kinematic[i]`
-and ``i\\in[1,N_\\mathrm{kin}]`` (see [Kinematic hardening](@ref))]
-
-If `overstress=RateIndependent()`, the plastic multiplier, ``\\lambda``, is obtained via the KKT-conditions,
-```math
-\\dot{\\lambda} \\geq 0, \\quad \\varPhi \\leq 0, \\quad \\dot{\\lambda}\\varPhi = 0
-```
-Otherwise, the overstress function, ``\\eta(\\varPhi)``, determines the evolution of ``\\lambda`` as 
-```math
-\\dot{\\lambda} = \\eta(\\varPhi, (Y_0 + \\kappa))
-```
-
 # Example
 ```julia
 m = Plastic(elastic = LinearElastic(E=210.e3, ν=0.3),
@@ -232,7 +187,8 @@ function residual(x::PlasticResidual{NKin,NIso}, m::Plastic, old::PlasticState, 
     Rσ = x.σ - calculate_stress(m.elastic, ϵₑ)       # Using the specific elastic law
     Rλ = yield_residual(m.overstress, Φ, x.Δλ, Δt, σy)
     Rκ = map((ih, κ, κold) -> κ - κold - x.Δλ * get_evolution(ih, κ), m.isotropic, x.κ, old.κ)
-    Rβ = map((kh, β, βold) -> β - βold - x.Δλ * get_evolution(kh, ν, β), m.kinematic, x.β, old.β)
+    Rβ_fun(kh, β, βold) = β - βold + (x.Δλ * 2*get_modulus(kh)/3) * get_evolution(kh, ν, β)
+    Rβ = map(Rβ_fun, m.kinematic, x.β, old.β)
     
     return PlasticResidual(Rσ, Rλ, Rκ, Rβ)
 end
