@@ -1,0 +1,11 @@
+```@meta
+CurrentModule = MechanicalMaterialModels
+```
+
+# Utility functions
+In the course of defining the material behavior, a set of functions that may be useful outside the package
+internals are documented here, but these are not exported. 
+```@docs
+vonmises
+macaulay
+```
