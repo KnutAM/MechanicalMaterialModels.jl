@@ -63,3 +63,16 @@ function vector_residual!(rf::Function, r_vector::AbstractVector{T}, x_vector::A
     tomandel!(r_vector, r_tensor)
     return r_vector
 end
+
+"""
+    static_vector(args::Union{Number, SVector}...)
+
+Convert the elements of `args` into an `SVector`.
+"""
+@inline static_vector(a, b, c...) = static_vector(static_vector(a,b), static_vector(c...))
+@inline static_vector(a::Number, b::Number) = static_vector(SVector(a), SVector(b))
+@inline static_vector(a::Number, b::StaticVector) = static_vector(SVector(a), b)
+@inline static_vector(a::StaticVector, b::Number) = static_vector(a, SVector(b))
+
+@inline static_vector(a::StaticVector, b::StaticVector) = vcat(a, b)
+@inline static_vector(a::StaticVector) = a
