@@ -1,6 +1,6 @@
 abstract type YieldCriterion end
 
-function yield_criterion(yc::YieldCriterion, σred::SymmetricTensor, ΔY::Number)
+function yield_criterion(yc::YieldCriterion, σred::AbstractTensor, ΔY::Number)
     return effective_stress(yc, σred) - (initial_yield_limit(yc)+ΔY)
 end
 

@@ -5,7 +5,7 @@ A finite-strain plasticity model with modular elastic laws, yield criteria,
 multiple isotropic and kinematic hardening contributions,
 and either rate-independent or viscoplastic response.
 # Keyword arguments
-- `elastic::AbstractMaterial`\\
+- `elastic::AbstractHyperElastic`\\
   Hyperelastic law, see e.g. [`CompressibleNeoHooke`](@ref)
 - `yield::YieldCriterion`\\
   Yield criterion, including the initial yield limit. If `yield::Real` is given, `VonMises(yield)` is used. 
@@ -19,7 +19,7 @@ and either rate-independent or viscoplastic response.
 
 # Example
 ```julia
-m = Plastic(elastic = CompressibleNeoHooke(G=80.e3, K=160.e3),
+m = FiniteStrainPlastic(elastic = CompressibleNeoHooke(G=80.e3, K=160.e3),
             yield = 300.0,
             isotropic = (Voce(Hiso=-100.e3, κ∞=-100.0),Voce(Hiso=10.e3, κ∞=200.0)),
             kinematic = (ArmstrongFrederick(Hkin=200.e3, β∞=200.0),
@@ -46,10 +46,10 @@ end
 get_base_numbertype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
 
 # Definition of material state
-struct FiniteStrainPlasticState{NKin,NIso,T} <: AbstractMaterialState
-    Fp::Tensor{2,3,T,9}
-    κ::NTuple{NIso, T}
-    Fk::NTuple{NKin, Tensor{2,3,T,9}}
+struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin}} <: AbstractMaterialState
+    Fp::TFp
+    κ::Tκ
+    Fk::TFk
 end
 
 function MMB.initial_material_state(m::FiniteStrainPlastic)
@@ -61,48 +61,21 @@ function MMB.initial_material_state(m::FiniteStrainPlastic)
         map(Returns(I2), m.kinematic))       # Fk
 end
 
-#=
-# Mandel conversion of state only required for differentiation, to be done later.
-Tensors.n_components(::Type{<:PlasticState{NK, NI}}) where {NK, NI} = NI + 9*(1+NK)
-
-MMB.get_num_statevars(m::Plastic) = length(m.isotropic) + 6*(1 + length(m.kinematic))
-
-function Tensors.tomandel!(v::AbstractVector, s::PlasticState{NKin,NIso,Tϵₚ,Tκ,Tβ}; offset=0) where {NKin,NIso,Tϵₚ,Tκ,Tβ}
-    tomandel!(v, s.ϵₚ; offset=offset)
-    v[(offset+7):(offset+6+NIso)] .= s.κ
-    for i=1:NKin
-        tomandel!(v, s.β[i], offset=offset+NIso+6*i) # 6 components in SymmetricTensor{2,3}
-    end
-    return v
-end
-function Tensors.tomandel(s::PlasticState{NKin,NIso,Tϵₚ,Tκ,Tβ}) where {NKin,NIso,Tϵₚ,Tκ,Tβ}
-    v = zeros(promote_type(Tϵₚ,Tκ,Tβ), Tensors.n_components(PlasticState{NKin,NIso}))
-    return tomandel!(v, s)
-end
-
-function Tensors.frommandel(::Type{<:PlasticState{NKin,NIso}}, v::AbstractVector{Tv}; offset=0) where {Tv,NKin,NIso}
-    ϵₚ = frommandel(SymmetricTensor{2,3}, v; offset=offset)
-    κ = ntuple(i->v[offset+6+i], NIso)
-    β = ntuple(i->frommandel(SymmetricTensor{2,3,Tv}, v, offset=offset+NIso+6*i), NKin) # 6 components in SymmetricTensor{2,3}
-    return PlasticState(ϵₚ,κ,β)
-end
-=#
-
 # Note: This could allow symmetric tensors. 
 # Could specialize the mandel_stress function to return symmetric tensors
 # for isotropic models. 
-struct FiniteStrainPlasticResidual{NKin_m1,NIso,T}
-    Mred::Tensor{2,3,T,9}
-    Δλ::T
-    κ::NTuple{NIso, T}
-    Mk::NTuple{NKin_m1, Tensor{2,3,T,9}} # Saves Mk[i-1] for i ∈ (2,Nkin), NKin_m1=NKin-1
+struct FiniteStrainPlasticResidual{NKin_m1,NIso,TM,Tλ,Tκ<:NTuple{NIso},TMk<:NTuple{NKin_m1}}
+    Mred::TM
+    Δλ::Tλ
+    κ::Tκ
+    Mk::TMk # Saves Mk[i-1] for i ∈ (2,Nkin), NKin_m1=NKin-1
 end
 
-Tensors.get_base(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}}) where{NKin_m1,NIso} = PlasticResidual{NKin_m1,NIso} # needed for frommandel
+Tensors.get_base(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}}) where{NKin_m1,NIso} = FiniteStrainPlasticResidual{NKin_m1,NIso} # needed for frommandel
 
 Tensors.n_components(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}}) where{NKin_m1,NIso} = 10 + NIso + 9*NKin_m1
 
-function Tensors.tomandel!(v::AbstractVector, r::FiniteStrainPlasticResidual{NKin_m1,NIso,T}; offset=0) where {NKin_m1,NIso,T}
+function Tensors.tomandel!(v::AbstractVector, r::FiniteStrainPlasticResidual{NKin_m1,NIso}; offset=0) where {NKin_m1,NIso}
     tomandel!(v, r.Mred; offset=offset)
     v[offset+10] = r.Δλ
     v[(offset+11):(offset+10+NIso)] .= r.κ
@@ -112,8 +85,11 @@ function Tensors.tomandel!(v::AbstractVector, r::FiniteStrainPlasticResidual{NKi
     return v
 end
 
-function Tensors.tomandel(r::FiniteStrainPlasticResidual{NKin_m1,NIso,T}) where {NKin_m1,NIso,T}
-    v=zeros(T, Tensors.n_components(PlasticResidual{NKin_m1,NIso}))
+function Tensors.tomandel(r::FiniteStrainPlasticResidual{NKin_m1,NIso}) where {NKin_m1,NIso}
+    elTκ = promote_type(typeof.(r.κ)...)
+    elTMk = promote_type(eltype.(r.Mk)...)
+    T = promote_type(eltype(r.Mred), typeof(r.Δλ), elTκ, elTMk)
+    v=zeros(T, Tensors.n_components(FiniteStrainPlasticResidual{NKin_m1,NIso}))
     return tomandel!(v, r)
 end
 
@@ -122,7 +98,7 @@ function Tensors.frommandel(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}},
     Δλ = v[offset+10]
     κ = ntuple(i->v[offset+10+i], NIso)
     Mk = ntuple(i->frommandel(Tensor{2,3}, v, offset=offset+1+NIso+9*i), NKin_m1)
-    return PlasticResidual(Mred, Δλ, κ, Mk)
+    return FiniteStrainPlasticResidual(Mred, Δλ, κ, Mk)
 end
 
 function MMB.allocate_material_cache(m::FiniteStrainPlastic)
@@ -137,47 +113,108 @@ end
 
 function mandel_stress(m_el::AbstractHyperElastic, Fe::Tensor{2,3})
     Ce = tdot(Fe)
-    return 2*Ce ⋅ compute_stress(m_el, Ce)
+    return Ce ⋅ compute_stress(m_el, Ce)
 end
 
-function MMB.material_response(m::Plastic, F::Tensor{2,3}, old::FiniteStrainPlasticState, Δt, cache, extras)
-    Fe = F ⋅ inv(old.Fp)
+function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::FiniteStrainPlasticState, Δt, cache, extras)
+    Fpinv = inv(old.Fp)
+    Fe = F ⋅ Fpinv
     M = mandel_stress(m.elastic, Fe)
-    
-    Φ_trial = yield_criterion(m.yield, M - sum(old.Mk), sum(old.κ))
+    Mk_old = map(calculate_neohook_backstress, m.kinematic, old.Fk)
+    Φ_trial = yield_criterion(m.yield, - sum(Mk_old; init=-M), sum(old.κ; init=0))
 
     if Φ_trial < 0
         update_extras!(extras)
-        P, dPdF = MMB.material_response(m.elastic, Fe)
+        dPdF, P = gradient(F_->calculate_PKstress(m, old, F_), F, :all)
         return P, dPdF, old
     else
-        x0 = initial_guess(m, old, ϵ)
-        rf!(r_vector, x_vector) = vector_residual!(x->residual(x, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
-        x_vector = getx(cache.newton)
+        x0 = initial_guess(m, old, M)
+        rf!(r_vector, x_vector) = vector_residual!(x->residual(x, m, old, F, Δt), r_vector, x_vector, x0)
+        x_vector = getx(cache)
         tomandel!(x_vector, x0)
-        x_vector, ∂R∂X, converged = newtonsolve(x_vector, rf!, cache.newton)
+        x_vector, ∂R∂X, converged = newtonsolve(x_vector, rf!, cache)
         if converged
             x_sol = frommandel(Tensors.get_base(typeof(x0)), x_vector)
             check_solution(x_sol)
             update_extras!(extras, x_sol, ∂R∂X) # Use dRdx before calling inv!
-            # dRdF = 0 = ∂R∂F + ∂R∂X dXdF
-            # TODO: Convert to static arrays for speed?
-            # TODO: Define get_plastic_result, value_jacobian, and get_plastic_state. 
-            ∂R∂F = jacobian(F_ -> tomandel(Vector, residual(x_sol, m, old, frommandel(Tensor{2,3}, F_), Δt)), tomandel(Vector, F))
-            dXdF = - ∂R∂X \ ∂R∂F
-            P_m, dPdX = value_jacobian(x -> get_plastic_result(m, x, old), x_sol)
-            P = frommandel(Tensor{2,3}, P_m)
-            dPdF = frommandel(Tensor{4,3}, dPdX * dXdF)
-            new = get_plastic_state(m, x_sol, old)
+            # dPdF = ∂P∂F + ∂P∂X dXdF
+            # dRdF = 0 = ∂R∂F + ∂R∂X dXdF => dXdF = - ∂R∂X\∂R∂F
             
-            return σ, dσdϵ, new
+            F_R_fun = Tensor2VectorFun(F, F_-> residual(x_sol, m, old, F_, Δt))
+            ∂R∂F = ForwardDiff.jacobian(F_R_fun, tomandel(Vector, F))
+            
+            dXdF = - ∂R∂X \ ∂R∂F
+
+            P = calculate_PKstress(m, x_sol, old, F)
+            P_X_fun = Tensor2VectorFun(x_sol, x -> calculate_PKstress(m, x, old, F))
+            ∂P∂X = ForwardDiff.jacobian(P_X_fun, tomandel(x_sol))
+
+            ∂P∂F = gradient(F_->calculate_PKstress(m, x_sol, old, F_), F)
+
+            dPdF = ∂P∂F + frommandel(Tensor{4,3}, ∂P∂X * dXdF)
+            new, _ = get_plastic_state(x_sol, m, old, F, Δt)
+            
+            return P, dPdF, new
         else
-            throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge, ϵ = ", ϵ))
+            throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge, F = ", F))
         end
     end
 end
 
-check_solution(x::PlasticResidual) = x.Δλ < 0 ? throw(MMB.NoLocalConvergence("Plastic: Invalid solution, x.Δλ = ", x.Δλ, " < 0")) : nothing
+struct Tensor2VectorFun{T, F<:Function}
+    tt::Type{T}
+    f::F
+end
+Tensor2VectorFun(::T, f::Function) where T = Tensor2VectorFun(Tensors.get_base(T), f)
+(tvf::Tensor2VectorFun{T})(x::Vector) where T = tomandel(tvf.f(frommandel(T, x)))
+# (::Tensor2VectorFun{T})(x::SVector) where T = tomandel(SVector, f(frommandel(T, x)))
+
+function get_plastic_state(x::FiniteStrainPlasticResidual, m::FiniteStrainPlastic, old::FiniteStrainPlasticState, F::Tensor, Δt)
+    ν = effective_stress_gradient(m.yield,  x.Mred)
+    Fp = Fx_time_integration(old.Fp, ν, x.Δλ)
+    Fpinv = inv(Fp)
+    Fe = F ⋅ Fpinv
+    M = mandel_stress(m.elastic, Fe)
+
+    Mk1 = M - sum(x.Mk; init=x.Mred)
+    T_Mk = promote_type(typeof(Mk1), eltype(x.Mk))
+    new_Fk(Fk_old, kh, Mk) = convert(T_Mk, Fx_time_integration(Fk_old, get_evolution(kh, ν, Mk), x.Δλ))
+    #new_Fk(Fk_old, kh, Mk) = Fx_time_integration(Fk_old, get_evolution(kh, ν, Mk), x.Δλ)
+    Mk_guess = tuple(Mk1, x.Mk...)
+    Fk = map(new_Fk, old.Fk, m.kinematic, Mk_guess)
+    new = FiniteStrainPlasticState(Fp, x.κ, Fk)    
+    #=
+    local new
+    try
+        new = FiniteStrainPlasticState(Fp, x.κ, Fk)    
+    catch e
+        @info "typeof(Fk[1]): ", typeof(Fk[1])
+        @info "typeof(Fk[2]): ", typeof(Fk[2])
+        @info "typeof(Fk[1])==typeof(Fk[2]): ", typeof(Fk[1])==typeof(Fk[2])
+        throw(e)
+    end
+    =#
+    return new, M
+end
+
+function calculate_PKstress(m::FiniteStrainPlastic, state::FiniteStrainPlasticState, F::Tensor)
+    return calculate_PKstress(m, state.Fp, F)
+end
+function calculate_PKstress(m::FiniteStrainPlastic, x::FiniteStrainPlasticResidual, old::FiniteStrainPlasticState, F::Tensor)
+    ν = effective_stress_gradient(m.yield,  x.Mred)
+    Fp = Fx_time_integration(old.Fp, ν, x.Δλ)
+    return calculate_PKstress(m, Fp, F)
+end
+function calculate_PKstress(m::FiniteStrainPlastic, Fp::Tensor, F::Tensor)
+    Fpinv = inv(Fp)
+    Fe = F ⋅ Fpinv
+    Ce = tdot(Fe)
+    Se = compute_stress(m.elastic, Ce)
+    P = Fe ⋅ Se ⋅ transpose(Fpinv)
+    return P
+end
+
+check_solution(x::FiniteStrainPlasticResidual) = x.Δλ < 0 ? throw(MMB.NoLocalConvergence("Plastic: Invalid solution, x.Δλ = ", x.Δλ, " < 0")) : nothing
 
 # TODO: Could be replaced by exponential map. 
 function Fx_time_integration(Fx_old, ν_full, Δλ)
@@ -186,30 +223,20 @@ function Fx_time_integration(Fx_old, ν_full, Δλ)
 end
 
 function calculate_neohook_backstress(kh::AbstractKinematicHardening, Fk::Tensor)
-    el_law = NeoHooke(get_modulus(kh))
+    el_law = NeoHooke(get_modulus(kh)/3)
     return mandel_stress(el_law, inv(Fk))
 end
 
 # General residual function 
 function residual(x::FiniteStrainPlasticResidual, m::FiniteStrainPlastic, old::FiniteStrainPlasticState, F::Tensor, Δt)
-    κ = sum(x.κ)
+    κ = sum(x.κ; init=0)
+    new, M = get_plastic_state(x, m, old, F, Δt)
+    Fk = new.Fk
     Φ = yield_criterion(m.yield, x.Mred, κ)
-
-    ν = effective_stress_gradient(m.yield,  x.Mred)
-    Fp = Fx_time_integration(old.Fp, ν, x.Δλ)
-    Fpinv = inv(Fp)
-    Fe = F ⋅ Fpinv
-    M = mandel_stress(m.elastic, Fe)
-
-    new_Fk(Fk_old, kh, Mk) = Fx_time_integration(Fk_old, get_evolution(kh, ν, Mk), x.Δλ)
-
-    Mk1 = M - (x.Mred + sum(x.Mk))
-    Mk_guess = tuple(Mk1, x.Mk...)
-    Fk = map(new_Fk, old.Fk, m.kinematic, Mk_guess)
 
     Mk = map(calculate_neohook_backstress, m.kinematic, Fk)
     
-    RM = x.Mred - (M - sum(Mk))
+    RM = x.Mred + sum(Mk; init=-M)
     Rλ = yield_residual(m.overstress, Φ, x.Δλ, Δt, initial_yield_limit(m.yield) + κ)
     Rκ = map((ih, κ, κold) -> κ - κold - x.Δλ * get_evolution(ih, κ), m.isotropic, x.κ, old.κ)
     RMk = map(-, Mk[2:end], x.Mk)
@@ -220,7 +247,7 @@ end
 function initial_guess(m::FiniteStrainPlastic, old::FiniteStrainPlasticState, M_trial)
     Mk = map(calculate_neohook_backstress, m.kinematic, old.Fk)
     Δλ = 0.0
-    return FiniteStrainPlasticResidual(M_trial-sum(Mk), Δλ, old.κ, Mk[2:end])
+    return FiniteStrainPlasticResidual(-sum(Mk; init=-M_trial), Δλ, old.κ, Mk[2:end])
 end
 
 #=

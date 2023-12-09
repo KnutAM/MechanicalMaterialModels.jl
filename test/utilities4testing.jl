@@ -1,6 +1,6 @@
-function run_shear(m, γmax, numsteps)
+function run_shear(m, γmax, numsteps; TT=SymmetricTensor)
     state = initial_material_state(m)
-    Δϵ = SymmetricTensor{2,3}((i,j)-> i==2 && j==1 ? γmax/numsteps : zero(γmax))
+    Δϵ = TT{2,3}((i,j)-> i==2 && j==1 ? γmax/numsteps : zero(γmax))
     s21 = zeros(numsteps+1)
     local σ, dσdϵ, ϵ
     for i = 1:numsteps
@@ -13,14 +13,14 @@ end
 
 run_normal(m, ϵmax::Number, numsteps; kwargs...) = run_normal(m, Vector(range(0,ϵmax;length=numsteps+1)); kwargs...)
 
-function run_normal(m, ϵ11_vec; Δt = NaN, stress_state=UniaxialNormalStress())
+function run_normal(m, ϵ11_vec; Δt = NaN, stress_state=UniaxialNormalStress(), ϵ_full = zero(SymmetricTensor{2,3}))
     s11 = zeros(length(ϵ11_vec))
-    local ϵ_full = zero(SymmetricTensor{2,3})
+    #local ϵ_full
     local σ, dσdϵ, state
     old_state = initial_material_state(m)
     cache = allocate_material_cache(m)
     for (i, ϵ11) = enumerate(ϵ11_vec)
-        ϵ = SymmetricTensor{2,3}((i,j)-> i==j==1 ? ϵ11 : ϵ_full[i,j])
+        ϵ = typeof(ϵ_full)((i,j)-> i==j==1 ? ϵ11 : ϵ_full[i,j])
         σ, dσdϵ, state, ϵ_full = material_response(stress_state, m, ϵ, old_state, Δt, cache)
         old_state = state
         s11[i] = σ[1,1]

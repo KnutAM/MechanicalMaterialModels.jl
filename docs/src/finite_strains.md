@@ -39,9 +39,9 @@ Mandel stress as
 ```math
 \boldsymbol{M} = 2 \boldsymbol{C}_\mathrm{e} \frac{\partial \varPsi}{\partial \boldsymbol{C}_\mathrm{e}}
 ```
-where $\boldsymbol{M} = \boldsymbol{F}_\mathrm{e}^\mathrm{T} \boldsymbol{\tau} \boldsymbol{F}_\mathrm{e}^\mathrm{-T}$ and $\boldsymbol{\tau}$ is the Kirchhoff stress. 
+where $\boldsymbol{M} = \boldsymbol{F}_\mathrm{e}^\mathrm{T} \boldsymbol{\tau} \boldsymbol{F}_\mathrm{e}^\mathrm{-T}$ and $\boldsymbol{\tau}$ is the Kirchhoff stress and $\boldsymbol{P} = \boldsymbol{F}_\mathrm{e} \boldsymbol{S}_\mathrm{e} \boldsymbol{F}_\mathrm{p}^{-T}$ is the 1st Piola-Kirchhoff stress.
 
-In summary, the elastic response is determined by the potential $\varPsi$, which is specified by the supplied elastic law.
+In summary, the elastic response is determined by the potential, $\varPsi(\boldsymbol{C}_\mathrm{e})$,  specified by the elastic law.
 
 #### [Yield Criterion](@id fsp_yield)
 A yield criterion of the type 
@@ -75,7 +75,12 @@ The back-stresses, $\boldsymbol{M}_{\mathrm{k},i}$, are calculated as
 ```math
 \boldsymbol{M}_{\mathrm{k},i} = 2\boldsymbol{c}_{\mathrm{k},i} \frac{\partial\varPsi_{\mathrm{k},i}}{\partial \boldsymbol{c}_{\mathrm{k},i}}
 ```
-where the deformation tensor associated with kinematic hardening,  $\boldsymbol{c}_{\mathrm{k},i} := \boldsymbol{F}_{\mathrm{k},i}^{-\mathrm{T}}\boldsymbol{F}_{\mathrm{k},i}^{-1}$. The evolution of the kinematic hardening deformation gradient, $\boldsymbol{F}_{\mathrm{k},i}$, is then given by the specific kinematic hardening law,
+where the deformation tensor associated with kinematic hardening,  $\boldsymbol{c}_{\mathrm{k},i} := \boldsymbol{F}_{\mathrm{k},i}^{-\mathrm{T}}\boldsymbol{F}_{\mathrm{k},i}^{-1}$. 
+The free energy for the kinematic hardening stress, $\varPsi_{\mathrm{k},i}$, is always given by 
+the incompressible [`NeoHooke`](@ref) formulation, with modulus $G=H/3$, where $H$ is the hardening modulus given to the kinematic hardening law. The factor $1/3$ gives the same initial plastic stiffness
+for both isotropic and kinematic hardening.
+
+The evolution of the kinematic hardening deformation gradient, $\boldsymbol{F}_{\mathrm{k},i}$, is then given by the specific kinematic hardening law,
 ```math
 \boldsymbol{L}_\mathrm{p} := \dot{\boldsymbol{F}}_\mathrm{p} \boldsymbol{F}_\mathrm{p}^{-1} = \dot{\lambda} \boldsymbol{g}_{\mathrm{k},i}(\boldsymbol{\nu}, \boldsymbol{M}_{\mathrm{k},i})
 ```
