@@ -14,4 +14,5 @@ compute_potential
 compute_stress
 compute_tangent
 compute_stress_and_tangent
+static_vector
 ```

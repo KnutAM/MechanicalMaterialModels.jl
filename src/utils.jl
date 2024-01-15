@@ -26,6 +26,18 @@ function vonmises(σ::SecondOrderTensor{3})
     return sqrt(3*(σ_dev ⊡ transpose(σ_dev))/2)
 end
 
+""" 
+    function vonmises_and_gradient(σ::SecondOrderTensor{3})
+
+Calculate the von Mises effective stress for a 2nd order tensor
+as well as the gradient, ν
+"""
+function vonmises_and_gradient(σ::SecondOrderTensor{3})
+    σ_dev = dev(σ)
+    σvm = sqrt(3*(σ_dev ⊡ transpose(σ_dev))/2)
+    return σvm, (3/(2*σvm))*transpose(σ_dev)
+end
+
 """
     function macaulay(x)
 
