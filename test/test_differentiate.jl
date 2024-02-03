@@ -1,6 +1,6 @@
-function test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, dσdϵ, deriv_extra_output, cache)
+function test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
     obtain_numerical_material_derivative!(deriv_num, m, ϵ, state, Δt)
-    differentiate_material!(deriv, m, ϵ, state, Δt, dσdϵ, deriv_extra_output, cache)
+    differentiate_material!(deriv, m, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
     for field in fieldnames(typeof(deriv))
         @test isapprox(
             getfield(deriv, field),
@@ -33,14 +33,14 @@ end
         Δt = 1.0
         σ, dσdϵ, new_state = material_response(m, ϵ, state, Δt, cache, deriv_extra_output)
         @testset "Initial ($(nameof(typeof(m))))" begin
-            test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, dσdϵ, deriv_extra_output, cache)
+            test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
         end
 
         # Test small increase in strain, but still in the elastic regime
         ϵ = SymmetricTensor{2,3}((i,j) -> i==j==1 ? 0.1*σ_y0/E : 0.0)
         σ, dσdϵ, new_state = material_response(m, ϵ, state, Δt, cache, deriv_extra_output)
         @testset "Elastic ($(nameof(typeof(m))))" begin
-            test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, dσdϵ, deriv_extra_output, cache)
+            test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
         end
 
         # Run until into the plastic regime
@@ -51,7 +51,7 @@ end
         σ, dσdϵ, new_state = material_response(m, ϵ, state, Δt, cache, deriv_extra_output)
         
         @testset "Plastic ($(nameof(typeof(m))))" begin
-            test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, dσdϵ, deriv_extra_output, cache)
+            test_numerical_derivative(deriv, deriv_num, m, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
         end
     end
 end

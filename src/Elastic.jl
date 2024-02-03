@@ -111,7 +111,7 @@ function MMB.material2vector!(v::AbstractVector, m::LinearElastic; offset=0)
 end
 
 # Differentiation
-function MMB.differentiate_material!(deriv::MaterialDerivatives{T}, m::LinearElastic, ϵ, ⁿs, Δt, dσdϵ, ::AbstractExtraOutput, ::Any) where {T}
+function MMB.differentiate_material!(deriv::MaterialDerivatives{T}, m::LinearElastic, ϵ, ⁿs, Δt, ::Any, ::AbstractExtraOutput, dσdϵ) where {T}
     tomandel!(deriv.dσdϵ, dσdϵ)
     p = material2vector(m)
     σ_from_param(p_vector) = tomandel(calculate_stress(vector2material(p_vector, m), ϵ))

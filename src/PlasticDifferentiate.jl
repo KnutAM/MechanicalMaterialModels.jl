@@ -1,7 +1,7 @@
 MMB.allocate_differentiation_output(m::Plastic) = DiffOutputHelper(m)
-function MMB.differentiate_material!(deriv::MaterialDerivatives, m::Plastic, ϵ, ⁿs, Δt, dσdϵ, diff_helper::DiffOutputHelper, cache)
+function MMB.differentiate_material!(deriv::MaterialDerivatives, m::Plastic, ϵ, ⁿs, Δt, cache, diff_helper::DiffOutputHelper, dσdϵ)
     if diff_helper.updated   # Plastic response
-        differentiate_material_plastic!(deriv, m, ϵ, ⁿs, Δt, dσdϵ, diff_helper, cache)
+        differentiate_material_plastic!(deriv, m, ϵ, ⁿs, Δt, cache, diff_helper, dσdϵ)
     else                        # Elastic response
         differentiate_material_elastic!(deriv, m, ϵ, ⁿs, dσdϵ)
     end
@@ -31,7 +31,7 @@ function differentiate_material_elastic!(deriv::MaterialDerivatives{T}, m::Plast
     fill!(deriv.dsdp, zero(T)) # Constant state
 end
     
-function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic, ϵ, ⁿs, Δt, dσdϵ, diff_helper::DiffOutputHelper, cache)
+function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic, ϵ, ⁿs, Δt, cache, diff_helper::DiffOutputHelper, dσdϵ)
     # Extract from input
     p = material2vector(m)
     X = diff_helper.X
