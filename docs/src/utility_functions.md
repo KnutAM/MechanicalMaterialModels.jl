@@ -7,5 +7,6 @@ In the course of defining the material behavior, a set of functions that may be 
 internals are documented here, but these are not exported. 
 ```@docs
 vonmises
+vonmises_and_gradient
 macaulay
 ```
