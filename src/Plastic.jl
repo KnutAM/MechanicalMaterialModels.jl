@@ -238,7 +238,8 @@ function MMB.vector2material(v::AbstractVector, m::Plastic; offset=0)
     kinematic, nkinparam = vector2materialtuple(v, m.kinematic, offset=i); i+=nkinparam
 
     overstress = vector2material(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
-
+    # The following constructor call doesn't seem to be type stable when used in e.g. differentiate_material. 
+    # Should be checked for (a) v and m same eltype and (b) v Dual and m Float64 eltypes.
     return Plastic(;elastic, yield, isotropic, kinematic, overstress)
 end
 
