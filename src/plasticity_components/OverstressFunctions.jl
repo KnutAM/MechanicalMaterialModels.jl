@@ -38,7 +38,7 @@ relaxation time and overstress sensitivty.
     nexp::TN
 end
 
-overstress_function(ratelaw::NortonOverstress, Φ, σy) = Φ<=0 ? zero(Φ) : (1/ratelaw.tstar)*(Φ/σy)^ratelaw.nexp
+overstress_function(ratelaw::NortonOverstress, Φ, σy) = (1/ratelaw.tstar) * macaulay(Φ/σy)^ratelaw.nexp
 
 MMB.get_num_params(::NortonOverstress) = 2
 MMB.vector2material(v::AbstractVector, ::NortonOverstress; offset=0) = NortonOverstress(v[offset+1], v[offset+2])
