@@ -55,7 +55,7 @@ struct LinearElastic{T, case, N} <: AbstractMaterial
     p::SVector{N,T}
 end
 
-get_base_numbertype(::LinearElastic{T}) where T = T
+MMB.get_parameter_type(::LinearElastic{T}) where T = T
 
 # General symmetry
 LinearElastic{:general}(C::SymmetricTensor) = LinearElastic(C)

@@ -43,7 +43,7 @@ function FiniteStrainPlastic(;elastic::AbstractHyperElastic, yield, isotropic=no
 end
 
 
-get_base_numbertype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
+MMB.get_parameter_type(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
 
 # Definition of material state
 struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin}} <: AbstractMaterialState
@@ -53,7 +53,7 @@ struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin
 end
 
 function MMB.initial_material_state(m::FiniteStrainPlastic)
-    T = get_base_numbertype(m)
+    T = MMB.get_parameter_type(m)
     I2 = one(Tensor{2,3,T})
     FiniteStrainPlasticState(
         I2,                                  # Fp
@@ -97,7 +97,7 @@ function Tensors.frommandel(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}},
 end
 
 function MMB.allocate_material_cache(m::FiniteStrainPlastic)
-    T = get_base_numbertype(m)
+    T = MMB.get_parameter_type(m)
     s = initial_material_state(m)
     F = one(Tensor{2,3})
     x = initial_guess(m, s, F)

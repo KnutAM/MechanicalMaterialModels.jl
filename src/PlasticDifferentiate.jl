@@ -7,22 +7,22 @@ function MMB.differentiate_material!(deriv::MaterialDerivatives, m::Plastic, ϵ,
     end
 end
 
-function differentiate_material_elastic!(deriv::MaterialDerivatives{T}, m::Plastic, ϵ, ⁿs, dσdϵ) where{T}
+function differentiate_material_elastic!(deriv::MaterialDerivatives{T}, m, ϵ, ⁿs, dσdϵ) where{T}
     p = material2vector(m)
     sv = zeros(Tensors.n_components(typeof(ⁿs)))
     # Differentiate stress
     tomandel!(deriv.dσdϵ, dσdϵ) # Already calculated
 
     ## Specialized function to only calculate the elastic stress
-    calculate_elastic_stress(m::Plastic, ϵ, old::PlasticState) = calculate_stress(m.elastic, ϵ-old.ϵₚ)
+    calculate_elastic_stress(m, ϵ, old) = calculate_stress(m.elastic, ϵ - old.ϵp)
     
     ## Differentiate stress by old state   
     σ_from_state(old_vector) = tomandel(calculate_elastic_stress(m, ϵ, frommandel(typeof(ⁿs), old_vector)))
-    ForwardDiff.jacobian!(deriv.dσdⁿs,σ_from_state,tomandel!(sv,ⁿs))
+    ForwardDiff.jacobian!(deriv.dσdⁿs, σ_from_state, tomandel!(sv, ⁿs))
 
     ## Differentiate stress by parameters
     σ_from_param(p_vector) = tomandel(calculate_elastic_stress(vector2material(p_vector, m), ϵ, ⁿs))
-    ForwardDiff.jacobian!(deriv.dσdp,σ_from_param,p)
+    ForwardDiff.jacobian!(deriv.dσdp, σ_from_param, p)
     
     # Differentiate state
     fill!(deriv.dsdϵ,  zero(T)) # Constant state
@@ -35,9 +35,8 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
     # Extract from input
     p = material2vector(m)
     X = diff_helper.X
-    ∂R∂Xᴹ = diff_helper.dRdXᴹ
+    ∂R∂Xinvᴹ = diff_helper.dRdX_invᴹ
     
-    # Preallocations (could be done beforehand also) (X=Nx, P=Np)
     Nσ = size(deriv.dσdϵ, 1)
     ∂R∂ϵᴹ = diff_helper.∂R∂ϵᴹ
     ∂R∂ⁿsᴹ = diff_helper.∂R∂ⁿsᴹ
@@ -48,7 +47,6 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
     
     # Precalculations
     ⁿs_vector = tomandel(ⁿs)
-    ∂R∂Xinvᴹ = inv(∂R∂Xᴹ)
 
     R_from_strain(ϵ_vector) = tomandel(residual(X, m, ⁿs, frommandel(baseof(ϵ), ϵ_vector), Δt, cache.resid))
     ForwardDiff.jacobian!(∂R∂ϵᴹ, R_from_strain, tomandel(ϵ))
