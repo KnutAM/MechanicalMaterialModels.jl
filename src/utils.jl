@@ -69,7 +69,7 @@ The input `x` and output `r` of `rf` should have the same type, `RT`, and suppor
 
 The approach was adopted from https://github.com/kimauth/MaterialModels.jl
 """
-function vector_residual!(rf::Function, r_vector::AbstractVector{T}, x_vector::AbstractVector{T}, x) where T
+function vector_residual!(rf::F, r_vector::AbstractVector{T}, x_vector::AbstractVector{T}, x) where {F<:Function, T}
     x_tensor = frommandel(baseof(x), x_vector)
     r_tensor = rf(x_tensor)
     tomandel!(r_vector, r_tensor)
