@@ -129,7 +129,7 @@ function get_newton_cache(m::Plastic, residual_cache)
     x = initial_guess(m, s, ϵ)
     xv = Vector{T}(undef, Tensors.n_components(typeof(x)))
     rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, ϵ, zero(T), residual_cache), r_vector, x_vector, x)
-    return NewtonCache(xv, rf!)
+    return NewtonCache(xv)
 end
 
 function MMB.allocate_material_cache(m::Plastic)
@@ -154,7 +154,7 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
         rf!(r_vector, x_vector) = vector_residual!(xx->residual(xx, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
         x_vector = getx(cache.newton)
         tomandel!(x_vector, x)
-        x_vector, dRdx, converged = newtonsolve(x_vector, rf!, cache.newton)
+        x_vector, dRdx, converged = newtonsolve(rf!, x_vector, cache.newton)
         if converged
             x_sol = frommandel(PlasticResidual{NKin,NIso}, x_vector)
             check_solution(x_sol)
