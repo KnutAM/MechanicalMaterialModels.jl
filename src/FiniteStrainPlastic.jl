@@ -103,7 +103,7 @@ function MMB.allocate_material_cache(m::FiniteStrainPlastic)
     x = initial_guess(m, s, F)
     xv = Vector{T}(undef, Tensors.n_components(typeof(x)))
     rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, F, zero(T)), r_vector, x_vector, x)
-    return NewtonCache(xv, rf!)
+    return NewtonCache(xv)
 end
 
 function mandel_stress(m_el::AbstractHyperElastic, Fe::Tensor{2,3})
@@ -125,7 +125,7 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
     else
         x0 = initial_guess(m, old, M)
         rf(x) = tomandel(SVector, residual(frommandel(typeof(x0), x), m, old, F, Δt))
-        x_vector, ∂R∂X, converged = newtonsolve(tomandel(SVector, x0), rf)
+        x_vector, ∂R∂X, converged = newtonsolve(rf, tomandel(SVector, x0))
 
         if converged
             x_sol = frommandel(typeof(x0), x_vector)
