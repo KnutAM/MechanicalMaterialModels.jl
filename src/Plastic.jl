@@ -272,7 +272,7 @@ function Base.show(io::IO, M::MIME"text/plain", m::Plastic)
         println(io, "Kinematic hardening laws:")
         foreach(kin->show(io, M, kin), m.kinematic)
     end
-    if length(m.kinematic) == 1
+    if length(m.isotropic) == 1
         print(io, "Isotropic hardening: ")
         show(io, M, m.isotropic[1])
     else    
