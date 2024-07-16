@@ -31,6 +31,9 @@ include("ExtraOutputs.jl")
 include("PlasticDifferentiate.jl")
 export Plastic
 
+include("specialized_models/SimplePlastic.jl")
+export SimplePlastic
+
 include("hyper_elasticity/HyperElastic.jl")
 include("hyper_elasticity/NeoHooke.jl")
 export NeoHooke, CompressibleNeoHooke
