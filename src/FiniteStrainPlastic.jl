@@ -43,7 +43,7 @@ function FiniteStrainPlastic(;elastic::AbstractHyperElastic, yield, isotropic=no
 end
 
 
-MMB.get_parameter_type(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
+MMB.get_params_eltype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
 
 # Definition of material state
 struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin}} <: AbstractMaterialState
@@ -53,7 +53,7 @@ struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin
 end
 
 function MMB.initial_material_state(m::FiniteStrainPlastic)
-    T = MMB.get_parameter_type(m)
+    T = MMB.get_params_eltype(m)
     I2 = one(Tensor{2,3,T})
     FiniteStrainPlasticState(
         I2,                                  # Fp
@@ -64,7 +64,7 @@ end
 # Note: This could allow symmetric tensors. 
 # Could specialize the mandel_stress function to return symmetric tensors
 # for isotropic models. 
-struct FiniteStrainPlasticResidual{NKin_m1,NIso,TM,Tλ,Tκ<:NTuple{NIso},TMk<:NTuple{NKin_m1}}
+struct FiniteStrainPlasticResidual{NKin_m1,NIso,TM,Tλ,Tκ<:NTuple{NIso},TMk<:NTuple{NKin_m1}} <: AbstractResidual
     Mred::TM
     Δλ::Tλ
     κ::Tκ
@@ -76,11 +76,11 @@ function FiniteStrainPlasticResidual(Mred, Δλ, κ::Tuple, Mk::Tuple)
     return FiniteStrainPlasticResidual(Mred, Δλ, map(x->convert(Tκ, x), κ), map(x->convert(TMk, x), Mk))
 end
 
-Tensors.get_base(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}}) where{NKin_m1,NIso} = FiniteStrainPlasticResidual{NKin_m1,NIso} # needed for frommandel
+function get_num_unknowns(::FiniteStrainPlasticResidual{NKin_m1,NIso}) where{NKin_m1,NIso}
+    return 10 + NIso + 9*NKin_m1
+end
 
-Tensors.n_components(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}}) where{NKin_m1,NIso} = 10 + NIso + 9*NKin_m1
-
-function Tensors.tomandel(::Type{<:SVector}, r::FiniteStrainPlasticResidual{NKin_m1,NIso}) where {NKin_m1,NIso}
+function MMB.tovector(::Type{<:SVector}, r::FiniteStrainPlasticResidual{NKin_m1,NIso}) where {NKin_m1,NIso}
     Ms = tomandel(SVector, r.Mred)
     Δλ = r.Δλ
     κs = SVector(r.κ)
@@ -88,7 +88,7 @@ function Tensors.tomandel(::Type{<:SVector}, r::FiniteStrainPlasticResidual{NKin
     return static_vector(Ms, Δλ, κs, Mks...)
 end
 
-function Tensors.frommandel(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}}, v::AbstractVector{T}; offset=0) where {T,NKin_m1,NIso}
+function MMB.fromvector(v::AbstractVector{T}, ::FiniteStrainPlasticResidual{NKin_m1,NIso}; offset=0) where {T,NKin_m1,NIso}
     Mred = frommandel(Tensor{2,3}, v; offset=offset)
     Δλ = v[offset+10]
     κ = ntuple(i->v[offset+10+i], NIso)
@@ -97,11 +97,11 @@ function Tensors.frommandel(::Type{<:FiniteStrainPlasticResidual{NKin_m1,NIso}},
 end
 
 function MMB.allocate_material_cache(m::FiniteStrainPlastic)
-    T = MMB.get_parameter_type(m)
+    T = MMB.get_params_eltype(m)
     s = initial_material_state(m)
     F = one(Tensor{2,3})
     x = initial_guess(m, s, F)
-    xv = Vector{T}(undef, Tensors.n_components(typeof(x)))
+    xv = Vector{T}(undef, get_num_unknowns(x))
     rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, F, zero(T)), r_vector, x_vector, x)
     return NewtonCache(xv)
 end
@@ -124,11 +124,11 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
         return P, dPdF, old
     else
         x0 = initial_guess(m, old, M)
-        rf(x) = tomandel(SVector, residual(frommandel(typeof(x0), x), m, old, F, Δt))
-        x_vector, ∂R∂X, converged = newtonsolve(rf, tomandel(SVector, x0))
+        rf(x) = tovector(SVector, residual(fromvector(x, x0), m, old, F, Δt))
+        x_vector, ∂R∂X, converged = newtonsolve(rf, tovector(SVector, x0))
 
         if converged
-            x_sol = frommandel(typeof(x0), x_vector)
+            x_sol = fromvector(x_vector, x0)
             check_solution(x_sol)
             update_extras!(extras, x_sol, ∂R∂X) # Use dRdx before calling inv!
             # dPdF = ∂P∂F + ∂P∂X dXdF
@@ -141,7 +141,7 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
 
             P = calculate_PKstress(m, x_sol, old, F)
             P_X_fun = Tensor2VectorFun(x_sol, x -> calculate_PKstress(m, x, old, F))
-            ∂P∂X = ForwardDiff.jacobian(P_X_fun, tomandel(SVector, x_sol))
+            ∂P∂X = ForwardDiff.jacobian(P_X_fun, tovector(SVector, x_sol))
 
             ∂P∂F = gradient(F_->calculate_PKstress(m, x_sol, old, F_), F)
 
@@ -156,12 +156,17 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
 end
 
 struct Tensor2VectorFun{T, F<:Function}
-    tt::Type{T}
+    t::T
     f::F
 end
-Tensor2VectorFun(::T, f::Function) where T = Tensor2VectorFun(Tensors.get_base(T), f)
-#(tvf::Tensor2VectorFun{T})(x::Vector) where T = tomandel(tvf.f(frommandel(T, x)))
-(tvf::Tensor2VectorFun{T})(x::SVector) where T = tomandel(SVector, tvf.f(frommandel(T, x)))
+_tovector(::Type{<:SVector}, t::AbstractTensor) = tomandel(SVector, t)
+_tovector(::Type{<:SVector}, r::AbstractResidual) = tovector(SVector, r)
+_fromvector(x, t::AbstractTensor) = frommandel(baseof(t), x)
+_fromvector(x, r::AbstractResidual) = fromvector(x, r)
+function (tvf::Tensor2VectorFun)(x::SVector)
+    z = _fromvector(x, tvf.t)
+    return _tovector(SVector, tvf.f(z))
+end
 
 function get_plastic_state(x::FiniteStrainPlasticResidual, m::FiniteStrainPlastic, old::FiniteStrainPlasticState, F::Tensor, Δt)
     ν = effective_stress_gradient(m.yield,  x.Mred)
@@ -245,40 +250,40 @@ function MMB.get_num_params(m::Plastic)
         get_num_params(m.overstress)))
 end
 
-function vector2materialtuple(v::AbstractVector, materialtuple; offset=0)
+function fromvectortuple(v::AbstractVector, materialtuple; offset=0)
     n = 0
     mout = map(materialtuple) do mt
-        m = vector2material(v, mt; offset=(offset+n))
+        m = fromvector(v, mt; offset=(offset+n))
         n += get_num_params(m)
         m
     end
     return mout, n
 end
 
-function MMB.vector2material(v::AbstractVector, m::Plastic; offset=0)
+function MMB.fromvector(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    elastic = vector2material(v, m.elastic, offset=i); i += get_num_params(m.elastic)
-    yield = vector2material(v, m.yield, offset=i); i += get_num_params(m.yield)
+    elastic = fromvector(v, m.elastic, offset=i); i += get_num_params(m.elastic)
+    yield = fromvector(v, m.yield, offset=i); i += get_num_params(m.yield)
     
-    isotropic, nisoparam = vector2materialtuple(v, m.isotropic, offset=i); i+=nisoparam
-    kinematic, nkinparam = vector2materialtuple(v, m.kinematic, offset=i); i+=nkinparam
+    isotropic, nisoparam = fromvectortuple(v, m.isotropic, offset=i); i+=nisoparam
+    kinematic, nkinparam = fromvectortuple(v, m.kinematic, offset=i); i+=nkinparam
 
-    overstress = vector2material(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
+    overstress = fromvector(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
 
     return Plastic(;elastic, yield, isotropic, kinematic, overstress)
 end
 
-function MMB.material2vector!(v::AbstractVector, m::Plastic; offset=0)
+function MMB.tovector!(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    material2vector!(v, m.elastic; offset=i); i += get_num_params(m.elastic)
-    material2vector!(v, m.yield; offset=i); i += get_num_params(m.yield)
+    tovector!(v, m.elastic; offset=i); i += get_num_params(m.elastic)
+    tovector!(v, m.yield; offset=i); i += get_num_params(m.yield)
     for iso in m.isotropic
-        material2vector!(v, iso;offset=i); i+= get_num_params(iso)
+        tovector!(v, iso;offset=i); i+= get_num_params(iso)
     end
     for kin in m.kinematic
-        material2vector!(v, kin; offset=i); i+= get_num_params(kin)
+        tovector!(v, kin; offset=i); i+= get_num_params(kin)
     end
-    material2vector!(v, m.overstress; offset=i); # i += get_num_params(m.overstress)
+    tovector!(v, m.overstress; offset=i); # i += get_num_params(m.overstress)
     return v
 end
 

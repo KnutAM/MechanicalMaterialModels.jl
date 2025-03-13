@@ -22,10 +22,10 @@
     @test !isapprox(af_h0, ow_h1)  # Should not be equal
     
     # Check constructors from vectors
-    @test af == MMB.vector2material([Hkin, β∞], af)
-    @test af == MMB.vector2material([1.0, Hkin, β∞], af, offset=1)
-    @test db == MMB.vector2material([Hkin, β∞, δ], db)
-    @test ow == MMB.vector2material([Hkin, β∞, m], ow)
+    @test af == MMB.fromvector([Hkin, β∞], af)
+    @test af == MMB.fromvector([1.0, Hkin, β∞], af, offset=1)
+    @test db == MMB.fromvector([Hkin, β∞, δ], db)
+    @test ow == MMB.fromvector([Hkin, β∞, m], ow)
 
     # Check show methods 
     @test contains(show_as_string(af), "ArmstrongFrederick with")
@@ -41,7 +41,7 @@ end
     voce = Voce(Hiso=Hiso, κ∞=κ∞)
 
     # Test conversion from vector
-    @test voce == MMB.vector2material(vv, voce)
+    @test voce == MMB.fromvector(vv, voce)
     
     # Calculate Voce response using analytical function
     vocelaw(param, λ) = param.κ∞*(one(λ) - exp(-param.Hiso*λ/param.κ∞))
@@ -56,7 +56,7 @@ end
     swiftlaw(param, λ) = param.K * (param.λ0 + λ)^param.n 
 
     # Test conversion from vector
-    @test swift == MMB.vector2material(sv, swift)
+    @test swift == MMB.fromvector(sv, swift)
 
     κ0 = swiftlaw(swift, 0.0)
     κ = swiftlaw(swift, λ)

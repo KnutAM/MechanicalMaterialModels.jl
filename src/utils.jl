@@ -56,23 +56,44 @@ Get the base-type of `t`, i.e. if `t::SymmetricTensor{2,3,Float64,6}`,
 """
 baseof(::TT) where{TT} = Tensors.get_base(TT)
 
+abstract type AbstractResidual end
+
 """
-    vector_residual!(rf::Function, r_vector::AbstractVector, x_vector::AbstractVector, x)
+    get_num_unknowns(res::AbstractResidual)
+
+Return the number of unknowns for the residual `res`
+"""
+function get_num_unknowns end
+
+"""
+    get_resid_eltype(res::AbstractResidual)
+
+Return the element type used to store `res` as a vector
+"""
+function get_resid_eltype end
+
+function MMB.tovector(r::AbstractResidual)
+    v = zeros(get_resid_eltype(r), get_num_unknowns(r))
+    MMB.tovector!(v, r)
+    return v
+end
+
+"""
+    vector_residual!(rf::Function, r_vector::AbstractVector, x_vector::AbstractVector, x::AbstractResidual)
 
 Makes it easy to construct a mutating vector residual function from a tensor-like equation,
 `r = rf(x) = residual(x, args...)`, e.g.
 `rf!(r_vector, x_vector) = vector_residual!(z -> residual(z, args...), r_vector, x_vector, x)`
 
-The input `x` and output `r` of `rf` should have the same type, `RT`, and support
-`Tensors.get_base(RT)`, `frommandel(Tensors.get_base(RT), x_vector)`, and 
-`tomandel!(r_vector, r)`.
+The input `x` and output `r` of `rf` should have the same type, `RT <: AbstractResidual`, 
+and support `MaterialModelsBase.tovector!` and `MaterialModelsBase.fromvector!`
 
 The approach was adopted from https://github.com/kimauth/MaterialModels.jl
 """
-function vector_residual!(rf::F, r_vector::AbstractVector{T}, x_vector::AbstractVector{T}, x) where {F<:Function, T}
-    x_tensor = frommandel(baseof(x), x_vector)
+function vector_residual!(rf::F, r_vector::AbstractVector{T}, x_vector::AbstractVector{T}, x::AbstractResidual) where {F<:Function, T}
+    x_tensor = fromvector(x_vector, x)
     r_tensor = rf(x_tensor)
-    tomandel!(r_vector, r_tensor)
+    tovector!(r_vector, r_tensor)
     return r_vector
 end
 

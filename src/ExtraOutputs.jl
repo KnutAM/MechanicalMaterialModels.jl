@@ -15,10 +15,10 @@ mutable struct DiffOutputHelper{TX, T} <: AbstractExtraOutput
 end
 
 function DiffOutputHelper(m::AbstractMaterial)
-    T = MMB.get_parameter_type(m)
+    T = MMB.get_params_eltype(m)
     X = initial_guess(m, initial_material_state(m), zero(SymmetricTensor{2,3}))
-    NR = Tensors.n_components(typeof(X))
-    Nσ = 6
+    NR = get_num_unknowns(X)
+    Nσ = get_num_tensorcomponents(m)
     Ns = get_num_statevars(m)
     Np = get_num_params(m)
     dRdX_invᴹ  = zeros(T, NR, NR)

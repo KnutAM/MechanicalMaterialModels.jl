@@ -42,7 +42,7 @@ function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstre
     return Plastic(elastic, yld, iso, kin, overstress)
 end
 
-MMB.get_parameter_type(m::Plastic) = MMB.get_parameter_type(m.elastic)
+MMB.get_params_eltype(m::Plastic) = MMB.get_params_eltype(m.elastic)
 
 # Definition of material state
 struct PlasticState{NKin,NIso,Tϵp,Tκ,Tβ} <: AbstractMaterialState
@@ -53,17 +53,19 @@ struct PlasticState{NKin,NIso,Tϵp,Tκ,Tβ} <: AbstractMaterialState
 end
 
 function MMB.initial_material_state(m::Plastic)
-    T = MMB.get_parameter_type(m)
+    T = MMB.get_params_eltype(m)
     PlasticState(zero(SymmetricTensor{2,3,T}), 
                  ntuple(i->get_initial_value(m.isotropic[i]), length(m.isotropic)), 
                  ntuple(i->zero(SymmetricTensor{2,3,T}), length(m.kinematic)))
 end
 
-Tensors.n_components(::Type{<:PlasticState{NK, NI}}) where {NK, NI} = NI + 6*(1+NK)
-
+MMB.get_num_statevars(::PlasticState{NK, NI}) where {NK, NI} = NI + 6*(1+NK)
 MMB.get_num_statevars(m::Plastic) = length(m.isotropic) + 6*(1 + length(m.kinematic))
+function MMB.get_statevar_eltype(::PlasticState{<:Any, <:Any, Tϵp, Tκ, Tβ}) where {Tϵp, Tκ, Tβ}
+    return promote_type(Tϵp, Tκ, Tβ)
+end
 
-function Tensors.tomandel!(v::AbstractVector, s::PlasticState{NKin,NIso,Tϵp,Tκ,Tβ}; offset=0) where {NKin,NIso,Tϵp,Tκ,Tβ}
+function MMB.tovector!(v::AbstractVector, s::PlasticState{NKin,NIso,Tϵp,Tκ,Tβ}; offset = 0) where {NKin,NIso,Tϵp,Tκ,Tβ}
     tomandel!(v, s.ϵp; offset=offset)
     v[(offset+7):(offset+6+NIso)] .= s.κ
     for i=1:NKin
@@ -71,50 +73,44 @@ function Tensors.tomandel!(v::AbstractVector, s::PlasticState{NKin,NIso,Tϵp,Tκ
     end
     return v
 end
-function Tensors.tomandel(s::PlasticState{NKin,NIso,Tϵp,Tκ,Tβ}) where {NKin,NIso,Tϵp,Tκ,Tβ}
-    v = zeros(promote_type(Tϵp,Tκ,Tβ), Tensors.n_components(PlasticState{NKin,NIso}))
-    return tomandel!(v, s)
+
+function MMB.fromvector(v::AbstractVector, ::PlasticState{NKin,NIso}; offset = 0) where {NKin,NIso}
+    ϵp = frommandel(SymmetricTensor{2, 3}, v; offset)
+    κ = ntuple(i -> v[offset + 6 + i], NIso)
+    # 6 components in SymmetricTensor{2,3}
+    β = ntuple(i -> frommandel(SymmetricTensor{2, 3}, v, offset = offset + NIso + 6 * i), NKin)
+    return PlasticState(ϵp, κ, β)
 end
 
-function Tensors.frommandel(::Type{<:PlasticState{NKin,NIso}}, v::AbstractVector{Tv}; offset=0) where {Tv,NKin,NIso}
-    ϵp = frommandel(SymmetricTensor{2,3}, v; offset=offset)
-    κ = ntuple(i->v[offset+6+i], NIso)
-    β = ntuple(i->frommandel(SymmetricTensor{2,3,Tv}, v, offset=offset+NIso+6*i), NKin) # 6 components in SymmetricTensor{2,3}
-    return PlasticState(ϵp,κ,β)
-end
-
-struct PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ,Tβ}
+struct PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ,Tβ} <: AbstractResidual
     σ::SymmetricTensor{2,3,Tσ,6}
     Δλ::Tλ
     κ::NTuple{NIso, Tκ}
     β::NTuple{NKin, SymmetricTensor{2,3,Tβ,6}}
 end
 
-Tensors.get_base(::Type{<:PlasticResidual{NKin,NIso}}) where{NKin,NIso} = PlasticResidual{NKin,NIso} # needed for frommandel
+function get_resid_eltype(::PlasticResidual{<:Any, <:Any, Tσ, Tλ, Tκ, Tβ}) where {Tσ, Tλ, Tκ, Tβ}
+    return promote_type(Tσ, Tλ, Tκ, Tβ)
+end
 
-Tensors.n_components(::Type{<:PlasticResidual{NKin,NIso}}) where{NKin,NIso} = 7 + NIso + 6*NKin
+get_num_unknowns(::PlasticResidual{NKin,NIso}) where {NKin, NIso} = 7 + NIso + 6 * NKin
 
-function Tensors.tomandel!(v::AbstractVector, r::PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ,Tβ}; offset=0) where {NKin,NIso,Tσ,Tλ,Tκ,Tβ}
+function MMB.tovector!(v::AbstractVector, r::PlasticResidual{NKin, NIso}; offset = 0) where {NKin, NIso}
     tomandel!(v, r.σ; offset=offset)
-    v[offset+7] = r.Δλ
-    v[(offset+8):(offset+7+NIso)] .= r.κ
+    v[offset + 7] = r.Δλ
+    v[(offset + 8):(offset + 7 + NIso)] .= r.κ
     for i=1:NKin
-        tomandel!(v, r.β[i], offset=offset+1+NIso+6*i) # 6 components in SymmetricTensor{2,3}
+        tomandel!(v, r.β[i], offset = offset + 1 + NIso + 6 * i) # 6 components in SymmetricTensor{2,3} 
     end
     return v
 end
 
-function Tensors.tomandel(r::PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ,Tβ}) where {NKin,NIso,Tσ,Tλ,Tκ,Tβ}
-    v=zeros(promote_type(Tσ,Tλ,Tκ,Tβ), Tensors.n_components(PlasticResidual{NKin,NIso}))
-    return tomandel!(v, r)
-end
-
-function Tensors.frommandel(::Type{<:PlasticResidual{NKin,NIso}}, v::AbstractVector{Tv}; offset=0) where {Tv,NKin,NIso}
-    σ = frommandel(SymmetricTensor{2,3}, v; offset=offset)
+function MMB.fromvector(v::AbstractVector, ::PlasticResidual{NKin,NIso}; offset=0) where {NKin, NIso}
+    σ = frommandel(SymmetricTensor{2, 3}, v; offset=offset)
     Δλ = v[offset+7]
-    κ = ntuple(i->v[offset+7+i], NIso)
-    β = ntuple(i->frommandel(SymmetricTensor{2,3,Tv}, v, offset=offset+1+NIso+6*i), NKin)
-    return PlasticResidual(σ,Δλ,κ,β)
+    κ = ntuple(i -> v[offset + 7 + i], NIso)
+    β = ntuple(i -> frommandel(SymmetricTensor{2, 3}, v, offset = offset + 1 + NIso + 6 * i), NKin)
+    return PlasticResidual(σ, Δλ, κ, β)
 end
 
 struct PlasticCache{TN,TR}
@@ -123,11 +119,11 @@ struct PlasticCache{TN,TR}
 end
 
 function get_newton_cache(m::Plastic, residual_cache)
-    T = MMB.get_parameter_type(m)
+    T = MMB.get_params_eltype(m)
     s = initial_material_state(m)
     ϵ = zero(SymmetricTensor{2,3})
     x = initial_guess(m, s, ϵ)
-    xv = Vector{T}(undef, Tensors.n_components(typeof(x)))
+    xv = Vector{T}(undef, get_num_unknowns(x))
     rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, ϵ, zero(T), residual_cache), r_vector, x_vector, x)
     return NewtonCache(xv)
 end
@@ -153,10 +149,10 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
         x = initial_guess(m, old, ϵ)
         rf!(r_vector, x_vector) = vector_residual!(xx->residual(xx, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
         x_vector = getx(cache.newton)
-        tomandel!(x_vector, x)
+        tovector!(x_vector, x)
         x_vector, dRdx, converged = newtonsolve(rf!, x_vector, cache.newton)
         if converged
-            x_sol = frommandel(PlasticResidual{NKin,NIso}, x_vector)
+            x_sol = fromvector(x_vector, x)
             check_solution(x_sol)
             inv_dRdx = Newton.inv!(dRdx, cache.newton)
             inv_J_σσ = frommandel(SymmetricTensor{4,3}, inv_dRdx)
@@ -219,44 +215,44 @@ function MMB.get_num_params(m::Plastic)
         get_num_params(m.overstress)))
 end
 
-function vector2materialtuple(v::AbstractVector, materialtuple; offset=0)
+function fromvectortuple(v::AbstractVector, materialtuple; offset=0)
     n = Ref(0)
     mout = map(materialtuple) do mt
-        m = vector2material(v, mt; offset=(offset+n[]))
+        m = fromvector(v, mt; offset=(offset+n[]))
         n[] += get_num_params(mt)
         m
     end
     return mout, n[]
 end
 
-function MMB.vector2material(v::AbstractVector, m::Plastic; offset=0)
+function MMB.fromvector(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    elastic = vector2material(v, m.elastic, offset=i); i += get_num_params(m.elastic)
-    yield = vector2material(v, m.yield, offset=i); i += get_num_params(m.yield)
+    elastic = fromvector(v, m.elastic, offset=i); i += get_num_params(m.elastic)
+    yield = fromvector(v, m.yield, offset=i); i += get_num_params(m.yield)
     
-    isotropic, nisoparam = vector2materialtuple(v, m.isotropic, offset=i)
+    isotropic, nisoparam = fromvectortuple(v, m.isotropic, offset=i)
     i += nisoparam
-    kinematic, nkinparam = vector2materialtuple(v, m.kinematic, offset=i)
+    kinematic, nkinparam = fromvectortuple(v, m.kinematic, offset=i)
     i += nkinparam
 
-    overstress = vector2material(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
+    overstress = fromvector(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
     # The following constructor call doesn't seem to be type stable when used in e.g. differentiate_material. 
     # Should be checked for (a) v and m same eltype and (b) v Dual and m Float64 eltypes.
     #return Plastic(;elastic, yield, isotropic, kinematic, overstress)
     return Plastic(elastic, yield, isotropic, kinematic, overstress)
 end
 
-function MMB.material2vector!(v::AbstractVector, m::Plastic; offset=0)
+function MMB.tovector!(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    material2vector!(v, m.elastic; offset=i); i += get_num_params(m.elastic)
-    material2vector!(v, m.yield; offset=i); i += get_num_params(m.yield)
+    tovector!(v, m.elastic; offset=i); i += get_num_params(m.elastic)
+    tovector!(v, m.yield; offset=i); i += get_num_params(m.yield)
     for iso in m.isotropic
-        material2vector!(v, iso;offset=i); i+= get_num_params(iso)
+        tovector!(v, iso;offset=i); i+= get_num_params(iso)
     end
     for kin in m.kinematic
-        material2vector!(v, kin; offset=i); i+= get_num_params(kin)
+        tovector!(v, kin; offset=i); i+= get_num_params(kin)
     end
-    material2vector!(v, m.overstress; offset=i); # i += get_num_params(m.overstress)
+    tovector!(v, m.overstress; offset=i); # i += get_num_params(m.overstress)
     return v
 end
 

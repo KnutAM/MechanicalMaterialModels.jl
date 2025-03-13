@@ -10,8 +10,8 @@ the so-called KKT loading/unloading conditions
 struct RateIndependent end
 
 MMB.get_num_params(::RateIndependent) = 0
-MMB.material2vector!(v, ::RateIndependent; kwargs...) = nothing
-MMB.vector2material(v, ::RateIndependent; kwargs...) = RateIndependent()
+MMB.tovector!(v, ::RateIndependent; kwargs...) = nothing
+MMB.fromvector(v, ::RateIndependent; kwargs...) = RateIndependent()
 
 yield_residual(::RateIndependent, Φ, args...) = Φ
 
@@ -41,9 +41,9 @@ end
 overstress_function(ratelaw::NortonOverstress, Φ, σy) = (1/ratelaw.tstar) * macaulay(Φ/σy)^ratelaw.nexp
 
 MMB.get_num_params(::NortonOverstress) = 2
-MMB.vector2material(v::AbstractVector, ::NortonOverstress; offset=0) = NortonOverstress(v[offset+1], v[offset+2])
+MMB.fromvector(v::AbstractVector, ::NortonOverstress; offset=0) = NortonOverstress(v[offset+1], v[offset+2])
 
-function MMB.material2vector!(v::Vector, o::NortonOverstress; offset=0)
+function MMB.tovector!(v::Vector, o::NortonOverstress; offset=0)
     v[offset+1] = o.tstar
     v[offset+2] = o.nexp
     return v
