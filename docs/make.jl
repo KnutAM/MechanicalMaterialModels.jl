@@ -27,4 +27,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/KnutAM/MechanicalMaterialModels.jl",
     devbranch="main",
+    push_preview=true,
 )
