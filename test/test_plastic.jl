@@ -10,15 +10,15 @@
 
     # Test constructors from vectors
     # Single test for just the tuple part
-    pisov, nisop = MechMat.vector2materialtuple(piso, iso)
+    pisov, nisop = MechMat.fromvectortuple(piso, iso)
     @test iso == pisov
     @test nisop == length(piso)
     # Test for the full material
     param = vcat(pel, σ_y0, piso, pkin)
-    @test m1 == MMB.vector2material(param, m1)
+    @test m1 == MMB.fromvector(param, m1)
     pvec = zeros(get_num_params(m1))
     @test length(pvec) == length(param)
-    MMB.material2vector!(pvec, m1)
+    MMB.tovector!(pvec, m1)
     @test pvec == param
     
     # Run an example, not test of result, just checking that it runs

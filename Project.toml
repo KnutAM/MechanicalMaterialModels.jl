@@ -1,7 +1,7 @@
 name = "MechanicalMaterialModels"
 uuid = "b3282f9b-607f-4337-ab95-e5488ab5652c"
 authors = ["Knut Andreas Meyer and contributors"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -14,7 +14,7 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 [compat]
 julia = "1.11"
 Tensors = "1.16.1"
-MaterialModelsBase = "0.2"
+MaterialModelsBase = "0.2.3"
 Newton = "0.2"
 
 [sources]

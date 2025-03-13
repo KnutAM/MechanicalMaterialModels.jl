@@ -8,8 +8,8 @@ function MMB.differentiate_material!(deriv::MaterialDerivatives, m::Plastic, ϵ,
 end
 
 function differentiate_material_elastic!(deriv::MaterialDerivatives{T}, m, ϵ, ⁿs, dσdϵ) where{T}
-    p = material2vector(m)
-    sv = zeros(Tensors.n_components(typeof(ⁿs)))
+    p = tovector(m)
+    sv = zeros(get_num_statevars(ⁿs))
     # Differentiate stress
     tomandel!(deriv.dσdϵ, dσdϵ) # Already calculated
 
@@ -17,11 +17,11 @@ function differentiate_material_elastic!(deriv::MaterialDerivatives{T}, m, ϵ, �
     calculate_elastic_stress(m, ϵ, old) = calculate_stress(m.elastic, ϵ - old.ϵp)
     
     ## Differentiate stress by old state   
-    σ_from_state(old_vector) = tomandel(calculate_elastic_stress(m, ϵ, frommandel(typeof(ⁿs), old_vector)))
-    ForwardDiff.jacobian!(deriv.dσdⁿs, σ_from_state, tomandel!(sv, ⁿs))
+    σ_from_state(old_vector) = tomandel(calculate_elastic_stress(m, ϵ, fromvector(old_vector, ⁿs)))
+    ForwardDiff.jacobian!(deriv.dσdⁿs, σ_from_state, tovector!(sv, ⁿs))
 
     ## Differentiate stress by parameters
-    σ_from_param(p_vector) = tomandel(calculate_elastic_stress(vector2material(p_vector, m), ϵ, ⁿs))
+    σ_from_param(p_vector) = tomandel(calculate_elastic_stress(fromvector(p_vector, m), ϵ, ⁿs))
     ForwardDiff.jacobian!(deriv.dσdp, σ_from_param, p)
     
     # Differentiate state
@@ -33,7 +33,7 @@ end
     
 function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic, ϵ, ⁿs, Δt, cache, diff_helper::DiffOutputHelper, dσdϵ)
     # Extract from input
-    p = material2vector(m)
+    p = tovector(m)
     X = diff_helper.X
     ∂R∂Xinvᴹ = diff_helper.dRdX_invᴹ
     
@@ -46,15 +46,15 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
     ∂s∂pᴹ = diff_helper.∂s∂pᴹ
     
     # Precalculations
-    ⁿs_vector = tomandel(ⁿs)
+    ⁿs_vector = tovector(ⁿs)
 
-    R_from_strain(ϵ_vector) = tomandel(residual(X, m, ⁿs, frommandel(baseof(ϵ), ϵ_vector), Δt, cache.resid))
+    R_from_strain(ϵ_vector) = tovector(residual(X, m, ⁿs, frommandel(baseof(ϵ), ϵ_vector), Δt, cache.resid))
     ForwardDiff.jacobian!(∂R∂ϵᴹ, R_from_strain, tomandel(ϵ))
 
-    R_from_state(old_vector) = tomandel(residual(X, m, frommandel(typeof(ⁿs), old_vector), ϵ, Δt, cache.resid))
+    R_from_state(old_vector) = tovector(residual(X, m, fromvector(old_vector, ⁿs), ϵ, Δt, cache.resid))
     ForwardDiff.jacobian!(∂R∂ⁿsᴹ, R_from_state, ⁿs_vector)
 
-    R_from_param(p_vector) = tomandel(residual(X, vector2material(p_vector, m), ⁿs, ϵ, Δt, cache.resid))
+    R_from_param(p_vector) = tovector(residual(X, fromvector(p_vector, m), ⁿs, ϵ, Δt, cache.resid))
     ForwardDiff.jacobian!(∂R∂pᴹ, R_from_param, p)
 
     # Differentiate the stress
@@ -69,17 +69,17 @@ function differentiate_material_plastic!(deriv::MaterialDerivatives, m::Plastic,
 
     # Differentiate the new state 
     ## Calculate ∂s∂Xᴹ first
-    s_from_X(X_vector) = tomandel(get_plastic_result(m, frommandel(typeof(X), X_vector), ⁿs)[2])
-    ForwardDiff.jacobian!(∂s∂Xᴹ, s_from_X, tomandel(X))
+    s_from_X(X_vector) = tovector(get_plastic_result(m, fromvector(X_vector, X), ⁿs)[2])
+    ForwardDiff.jacobian!(∂s∂Xᴹ, s_from_X, tovector(X))
     ∂s∂Xᴹ_times_∂R∂Xinvᴹ = ∂s∂Xᴹ*∂R∂Xinvᴹ
     ## dsdϵ
     deriv.dsdϵ .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂ϵᴹ    # ∂s∂ϵ = 0 (get_plastic_result does not take the strain as argument)
     ## dsdⁿs
-    s_from_state(old_vector) = tomandel(get_plastic_result(m, X, frommandel(typeof(ⁿs), old_vector))[2])
+    s_from_state(old_vector) = tovector(get_plastic_result(m, X, fromvector(old_vector, ⁿs))[2])
     ForwardDiff.jacobian!(∂s∂ⁿsᴹ, s_from_state, ⁿs_vector)
     deriv.dsdⁿs .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂ⁿsᴹ + ∂s∂ⁿsᴹ
     ## dsdp
-    s_from_p(p_vector) = tomandel(get_plastic_result(vector2material(p_vector, m), X, ⁿs)[2])
+    s_from_p(p_vector) = tovector(get_plastic_result(fromvector(p_vector, m), X, ⁿs)[2])
     ForwardDiff.jacobian!(∂s∂pᴹ, s_from_p, p)
     deriv.dsdp .= -∂s∂Xᴹ_times_∂R∂Xinvᴹ*∂R∂pᴹ + ∂s∂pᴹ
     

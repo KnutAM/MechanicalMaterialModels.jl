@@ -68,11 +68,11 @@ end
 MMB.get_num_params(::ArmstrongFrederick) = 2
 MMB.get_num_params(::Union{Delobelle,OhnoWang}) = 3
 
-MMB.vector2material(v::AbstractVector, ::ArmstrongFrederick; offset=0) = ArmstrongFrederick(Hkin=v[offset+1], β∞=v[offset+2])
-MMB.vector2material(v::AbstractVector, ::Delobelle; offset=0) = Delobelle(Hkin=v[offset+1], β∞=v[offset+2], δ=v[offset+3])
-MMB.vector2material(v::AbstractVector, ::OhnoWang; offset=0) = OhnoWang(Hkin=v[offset+1], β∞=v[offset+2], m=v[offset+3])
+MMB.fromvector(v::AbstractVector, ::ArmstrongFrederick; offset=0) = ArmstrongFrederick(Hkin=v[offset+1], β∞=v[offset+2])
+MMB.fromvector(v::AbstractVector, ::Delobelle; offset=0) = Delobelle(Hkin=v[offset+1], β∞=v[offset+2], δ=v[offset+3])
+MMB.fromvector(v::AbstractVector, ::OhnoWang; offset=0) = OhnoWang(Hkin=v[offset+1], β∞=v[offset+2], m=v[offset+3])
 
-function MMB.material2vector!(v::Vector, kh::KH; offset=0) where{KH<:AbstractKinematicHardening}
+function MMB.tovector!(v::Vector, kh::KH; offset=0) where{KH<:AbstractKinematicHardening}
     for (i,key) in enumerate(fieldnames(KH))
         v[offset+i] = getfield(kh, key)
     end
