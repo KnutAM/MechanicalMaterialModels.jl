@@ -15,4 +15,6 @@ compute_stress
 compute_tangent
 compute_stress_and_tangent
 static_vector
+get_resid_eltype
+get_num_unknowns
 ```
