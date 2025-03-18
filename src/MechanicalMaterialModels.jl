@@ -9,6 +9,10 @@ import MaterialModelsBase as MMB
 # Utils etc.
 include("utils.jl")
 
+# Wrappers
+include("RotatedMaterial.jl")
+export RotatedMaterial
+
 # Hardening laws etc. 
 include("plasticity_components/YieldCriteria.jl")
 export VonMises, DruckerPrager
@@ -21,6 +25,9 @@ export ArmstrongFrederick, Delobelle, OhnoWang
 
 include("plasticity_components/OverstressFunctions.jl")
 export RateIndependent, NortonOverstress
+
+include("plasticity_components/Crystallography.jl")
+export BCC, BCC12, FCC, GenericCrystallography
 
 # Different material classes
 include("Elastic.jl")

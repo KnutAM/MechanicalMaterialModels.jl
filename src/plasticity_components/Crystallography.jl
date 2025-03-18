@@ -3,25 +3,39 @@ function get_slip_systems end
 
 # Construction of a `Crystallography` subtype, `CT`, are assumed support `CT(planes::SVector, directions::SVector)`
 abstract type Crystallography{T} end
-(::Type{CT})() where {CT<:Crystallography} = CT{Float64}()  # Default to Float64 slip definitions
+(::Type{CT})(::Type{T} = Float64) where {CT<:Crystallography, T} = CT{T}()  # Default to Float64 slip definitions
 (::Type{CT})() where {CT<:Crystallography{T}} where {T<:AbstractFloat} = CT(get_slip_systems(CT)...)
 
 get_num_slipsystems(c::Crystallography) = length(get_slip_planes(c))
 get_slip_plane(c::Crystallography, i::Int) = get_slip_planes(c)[i]
 get_slip_direction(c::Crystallography, i::Int) = get_slip_directions(c)[i]
 get_slip_dyads(c::Crystallography) = map(⊗, get_slip_directions(c), get_slip_planes(c))
-get_slip_dyads_test(c::Crystallography) = map((s,m) -> (s⊗m), get_slip_directions(c), get_slip_planes(c))
 
+"""
+    BCC([T = Float64])
+
+Create a full BCC crystal structure with 48 slip systems.
+"""
 struct BCC{T} <: Crystallography{T}
     planes::SVector{48,Vec{3,T}}
     directions::SVector{48,Vec{3,T}}
 end
 
+"""
+    FCC([T = Float64])
+
+Create a full FCC crystal structure with 12 slip systems.
+"""
 struct FCC{T} <: Crystallography{T}
     planes::SVector{12,Vec{3,T}}
     directions::SVector{12,Vec{3,T}}
 end
 
+"""
+    BCC12([T = Float64])
+
+Create a reduced BCC crystal structure with 12 slip systems.
+"""
 struct BCC12{T} <: Crystallography{T}
     planes::SVector{12,Vec{3,T}}
     directions::SVector{12,Vec{3,T}}
@@ -32,16 +46,23 @@ struct GenericCrystallography{T,dim,N} <: Crystallography{T}
     directions::SVector{N, Vec{dim,T}}
 end
 
-GenericCrystallography(args...) = GenericCrystallography{Float64}(args...)
+"""
+    GenericCrystallography(angles::AbstractFloat...)
 
-function GenericCrystallography{T}(angles::Number...) where {T<:AbstractFloat}
-    p = Vec{2,T}((0, 1))
-    d = Vec{2,T}((1, 0))
+Create a generic 2d crystal which rotates the slip plane (0, 1)
+and slip direction (1, 0) by `angles` (measured in radians) in 
+the counter-clockwise direction.
+"""
+function GenericCrystallography(angles::T...) where {T<:AbstractFloat}
+    p = Vec{2, T}((0, 1))
+    d = Vec{2, T}((1, 0))
     return GenericCrystallography(
         SVector(map(θ -> rotate(p, θ), angles)),
         SVector(map(θ -> rotate(d, θ), angles)))
 end
-# TODO: Extend to 3d when `eltype(angles)<:Tensor{2,3}`
+
+# TODO: Generic in 3d
+# function GenericCrystallography(rotations::RT...) where {T, RT <: Vec{3, T}}
 
 get_slip_planes(c::Union{BCC,FCC,BCC12,GenericCrystallography}) = c.planes
 get_slip_directions(c::Union{BCC,FCC,BCC12,GenericCrystallography}) = c.directions
