@@ -23,6 +23,7 @@ include("test_overstress.jl")
 include("test_plastic.jl")
 include("test_viscoplastic.jl")
 include("test_differentiate.jl")
+include("test_crystal_plasticity.jl")
 
 # Test wrappers
 include("test_rotated.jl")
