@@ -8,8 +8,7 @@ struct Maxwell{T}
     G::T
     η::T
 end
-function Maxwell(; G = nothing, η = nothing, t = nothing)
-    G === nothing && throw(ArgumentError("G must be given"))
+function Maxwell(; G, η = nothing, t = nothing)
     if η === nothing
         t === nothing && throw(ArgumentError("Either t or η must be given, but not both"))
         return Maxwell(G, G * t)

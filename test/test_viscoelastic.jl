@@ -49,4 +49,14 @@
         end
         @test σ ≈ D0 ⊡ ϵ_end
     end
+
+    # Test some error paths and constructors 
+    η = rand()
+    c1 = Maxwell(;G = G0, η)
+    c2 = Maxwell(;G = G0, t = η / G0)
+    @test_throws ArgumentError Maxwell(;G = G0)
+    @test_throws ArgumentError Maxwell(;G = G0, η, t = rand())
+
+    @test c1.η == η
+    @test c2.η ≈ η # Correct conversion
 end
