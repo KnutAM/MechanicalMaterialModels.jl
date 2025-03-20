@@ -26,6 +26,9 @@ export RateIndependent, NortonOverstress
 include("Elastic.jl")
 export LinearElastic
 
+include("ViscoElastic.jl")
+export Maxwell, GeneralizedMaxwell
+
 include("Plastic.jl")
 include("ExtraOutputs.jl")
 include("PlasticDifferentiate.jl")
