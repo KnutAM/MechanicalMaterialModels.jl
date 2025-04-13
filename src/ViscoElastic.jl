@@ -8,6 +8,7 @@ struct Maxwell{T}
     G::T
     η::T
 end
+#TODO: Support T=SymmetricTensor{4,3} to allow for anisotropic responses.
 function Maxwell(; G, η = nothing, t = nothing)
     if η === nothing
         t === nothing && throw(ArgumentError("Either t or η must be given, but not both"))
@@ -37,10 +38,8 @@ end
 Create a generalized Maxwell model with an arbitrary number of Maxwell chains.
 The `elastic` part refers to the long-term stiffness contribution. 
 
-!!! note "WIP"
-    The `GeneralizedMaxwell` and `Maxwell` are currently quite specific to isotropic behavior,
-    this may change in the future with related changes to the constructors.
-
+Currently, `GeneralizedMaxwell` and `Maxwell` are specific to isotropic viscous behavior,
+this should be generalized.
 """
 struct GeneralizedMaxwell{ET, T, num} <: AbstractMaterial
     base::ET
@@ -51,12 +50,14 @@ function GeneralizedMaxwell(base::LinearElastic, chains::Maxwell...)
     return GeneralizedMaxwell(base, chains)
 end
 
+MMB.get_params_eltype(::GeneralizedMaxwell{<:Any, T}) where {T} = T
+
 struct GeneralizedMaxwellState{T, num} <: AbstractMaterialState
     ϵv::NTuple{num, SymmetricTensor{2,3,T,6}}
 end
 
-function MMB.initial_material_state(::GeneralizedMaxwell{<:Any, <:Any, num}) where {num}
-    T = Float64 # temp
+function MMB.initial_material_state(m::GeneralizedMaxwell{<:Any, <:Any, num}) where {num}
+    T = MMB.get_params_eltype(m)
     return GeneralizedMaxwellState(ntuple(_ -> zero(SymmetricTensor{2, 3, T}), num))
 end
 
