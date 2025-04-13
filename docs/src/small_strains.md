@@ -18,6 +18,12 @@ LinearElastic(::Val{:general})
 LinearElastic(::Val{:cubicsymmetry})
 ```
 
+## [Viscoelasticity](@id small_strain_viscoelasticity)
+```@docs
+GeneralizedMaxwell
+Maxwell
+```
+
 ## [Plasticity](@id small_strain_plasticity)
 ```@docs
 Plastic
@@ -69,10 +75,4 @@ If `overstress=RateIndependent()`, the plastic multiplier, ``\lambda``, is obtai
 Otherwise, the overstress function, ``\eta(\varPhi)``, determines the evolution of ``\lambda`` as 
 ```math
 \dot{\lambda} = \eta(\varPhi, (Y_0 + \kappa))
-```
-
-## [Viscoelasticity](@id small_strain_viscoelasticity)
-```@docs
-GeneralizedMaxwell
-Maxwell
 ```
