@@ -9,4 +9,5 @@ internals are documented here, but these are not exported.
 vonmises
 vonmises_and_gradient
 macaulay
+convert_hooke_param
 ```
