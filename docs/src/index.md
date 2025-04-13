@@ -15,7 +15,7 @@ Pkg.add(url="https://github.com/KnutAM/Newton.jl")
 Pkg.add(url="https://github.com/KnutAM/MechanicalMaterialModels.jl")
 ```
 
-See [``'s documentation](https://knutam.github.io/MaterialModelsBase.jl/dev/) for details
+See [`MaterialModelsBase.jl`'s documentation](https://knutam.github.io/MaterialModelsBase.jl/dev/) for details
 on how to use materials.
 
 ## Examples of available material models
