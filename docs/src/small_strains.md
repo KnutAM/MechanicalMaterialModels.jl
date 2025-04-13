@@ -70,3 +70,9 @@ Otherwise, the overstress function, ``\eta(\varPhi)``, determines the evolution 
 ```math
 \dot{\lambda} = \eta(\varPhi, (Y_0 + \kappa))
 ```
+
+## [Viscoelasticity](@id small_strain_viscoelasticity)
+```@docs
+GeneralizedMaxwell
+Maxwell
+```
