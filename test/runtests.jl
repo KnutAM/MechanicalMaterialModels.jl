@@ -10,6 +10,7 @@ using Test
 
 include("utilities4testing.jl")
 
+include("test_utils.jl")
 include("test_hyperelastic.jl")
 
 include("test_elastic.jl")
@@ -20,3 +21,5 @@ include("test_plastic.jl")
 include("test_viscoplastic.jl")
 include("test_viscoelastic.jl")
 include("test_differentiate.jl")
+
+include("test_finitestrainplastic.jl")

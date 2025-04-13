@@ -8,6 +8,8 @@ import MaterialModelsBase as MMB
 
 # Utils etc.
 include("utils.jl")
+include("isotropic_hooke_conversions.jl")
+export convert_hooke_param
 
 # Hardening laws etc. 
 include("plasticity_components/YieldCriteria.jl")
@@ -39,5 +41,6 @@ include("hyper_elasticity/NeoHooke.jl")
 export NeoHooke, CompressibleNeoHooke
 
 include("FiniteStrainPlastic.jl")
+export FiniteStrainPlastic
 
 end
