@@ -18,6 +18,12 @@ LinearElastic(::Val{:general})
 LinearElastic(::Val{:cubicsymmetry})
 ```
 
+## [Viscoelasticity](@id small_strain_viscoelasticity)
+```@docs
+GeneralizedMaxwell
+Maxwell
+```
+
 ## [Plasticity](@id small_strain_plasticity)
 ```@docs
 Plastic

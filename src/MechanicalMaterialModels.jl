@@ -8,6 +8,8 @@ import MaterialModelsBase as MMB
 
 # Utils etc.
 include("utils.jl")
+include("isotropic_hooke_conversions.jl")
+export convert_hooke_param
 
 # Wrappers
 include("RotatedMaterial.jl")
@@ -33,6 +35,9 @@ export BCC, BCC12, FCC, GenericCrystallography
 include("Elastic.jl")
 export LinearElastic
 
+include("ViscoElastic.jl")
+export Maxwell, GeneralizedMaxwell
+
 include("Plastic.jl")
 include("ExtraOutputs.jl")
 include("PlasticDifferentiate.jl")
@@ -46,5 +51,6 @@ include("hyper_elasticity/NeoHooke.jl")
 export NeoHooke, CompressibleNeoHooke
 
 include("FiniteStrainPlastic.jl")
+export FiniteStrainPlastic
 
 end
