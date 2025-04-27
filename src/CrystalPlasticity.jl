@@ -44,12 +44,14 @@ function residual(mat::CrystalPlasticity, Δγ::SVector{nslip}, old::CrystalPlas
     cross_hard = mat.q * sum_Δγ
     slip_dirs = get_slip_directions(mat.crystal)
     slip_planes = get_slip_planes(mat.crystal)
-    return map((dγ, κ_old, β_old, ν_tr, s, m) -> (
-        τ = s ⋅ σ ⋅ m;
-        κ = κ_old + h * (cross_hard + (1 - mat.q) * dγ);
-        β = mat.β∞ * ν_tr + exp(-mat.Hkin * dγ / mat.β∞) * (β_old - mat.β∞ * ν_tr);
-        Φ = abs(τ - β) - (mat.yield + κ);
-        yield_residual(mat.overstress, Φ, dγ, Δt, mat.yield + κ)),
+    return map(
+        (dγ, κ_old, β_old, ν_tr, s, m) -> (
+            τ = s ⋅ σ ⋅ m;
+            κ = κ_old + h * (cross_hard + (1 - mat.q) * dγ);
+            β = mat.β∞ * ν_tr + exp(-mat.Hkin * dγ / mat.β∞) * (β_old - mat.β∞ * ν_tr);
+            Φ = abs(τ - β) - (mat.yield + κ);
+            yield_residual(mat.overstress, Φ, dγ, Δt, mat.yield + κ)
+            ),
         Δγ, old.κ, old.β, ν_trial, slip_dirs, slip_planes)
 end
 

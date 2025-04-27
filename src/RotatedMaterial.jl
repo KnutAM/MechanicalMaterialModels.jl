@@ -3,7 +3,7 @@
 
 A rotated material is wrapper around `m`, such that the material response is evaluated in a 
 local coordinate system defined by the Rodrigues rotation vector, `r`. Specifically, the input 
-strain is first rotated by `θ = -|r|` around `r` before calling `material_response` with `m`. 
+strain is first rotated by `θ = -|r|` (radians) around `r` before calling `material_response` with `m`. 
 The resulting stress and stiffness are rotated back, `θ = +|r|` around `r`, before they are returned.
 
 This is equivalent to rotating the material parameter tensors (e.g. stiffness tensor `θ = +|r|` around `r`).

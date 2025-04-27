@@ -1,4 +1,4 @@
-#@testset "CrystalPlasticity" begin
+@testset "CrystalPlasticity" begin
     m = CrystalPlasticity(;
         crystal = FCC(),
         elastic = LinearElastic(;E = 100.e3, ν = 0.3),
@@ -11,5 +11,4 @@
     Δϵ21 = 0.01
     N = 100
     s21, σ, dσdϵ, state, ϵ = run_shear(m, Δϵ21, N, 1e-3)
-
-#end
+end
