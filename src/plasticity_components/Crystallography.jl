@@ -1,4 +1,3 @@
-"Get the slip systems for the given crystallography type."
 function get_slip_systems end
 
 # Construction of a `Crystallography` subtype, `CT`, are assumed support `CT(planes::SVector, directions::SVector)`

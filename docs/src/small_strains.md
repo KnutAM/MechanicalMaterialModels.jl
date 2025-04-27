@@ -83,5 +83,6 @@ Otherwise, the overstress function, ``\eta(\varPhi)``, determines the evolution 
 FCC
 BCC
 BCC12
+GenericCrystallography
 CrystalPlasticity
 ```
