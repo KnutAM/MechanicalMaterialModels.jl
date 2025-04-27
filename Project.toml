@@ -24,3 +24,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "ForwardDiff", "FiniteDiff"]
+
+[sources]
+MaterialModelsBase = {rev = "main", url = "https://github.com/knutam/MaterialModelsBase.jl"}
+Newton = {rev = "main", url = "https://github.com/knutam/Newton.jl"}
