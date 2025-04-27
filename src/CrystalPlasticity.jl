@@ -1,4 +1,25 @@
-# For now a specific case, to be updated in the future
+"""
+    CrystalPlasticity(;crystal, elastic, yield, q, h0, h∞, ζ, Hkin, β∞, overstress)
+
+!!! note Experimental API
+    The current implementation is one very specific model, and it is expected that it will be 
+    generalized in the future to become more modular.
+
+The parameters for this model are, 
+* `crystal::Crystallography`: Which crystal structure should be used, e.g. [`BCC`](@ref) or [`FCC`](@ref).
+* `elastic::LinearElastic`: Which elastic law to be used. 
+* `yield::Number`: Initial yield limit in all slip systems
+* `q::Number`: Cross hardening factor, q=0 is no cross hardening, q = 1 is full
+* `h0::Number`: Initial hardening modulus
+* `h∞::Number`: Saturated hardening modulus
+* `ζ::Number`: Hardening saturation rate
+* `Hkin::Number`: Kinematic hardening modulus
+* `β∞::Number`: Kinematic saturation stress
+* `overstress`: An overstress function (`<:Overstress`) or `RateIndependent`.
+
+See [Meyer (2020)](https://doi.org/10.1016/j.ijsolstr.2020.04.037) for a description of this model
+in a finite strain framework. 
+"""
 @kwdef struct CrystalPlasticity{C, E, T, OS} <: AbstractMaterial
     crystal::C          # E.g. BCC, FCC, etc.
     elastic::E          # Elastic definition

@@ -76,3 +76,12 @@ Otherwise, the overstress function, ``\eta(\varPhi)``, determines the evolution 
 ```math
 \dot{\lambda} = \eta(\varPhi, (Y_0 + \kappa))
 ```
+
+## [Crystal Plasticity](@id small_strain_crystal_plasticity)
+
+```@docs
+FCC
+BCC
+BCC12
+CrystalPlasticity
+```
