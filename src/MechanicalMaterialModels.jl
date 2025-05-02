@@ -11,6 +11,10 @@ include("utils.jl")
 include("isotropic_hooke_conversions.jl")
 export convert_hooke_param
 
+# Wrappers
+include("RotatedMaterial.jl")
+export RotatedMaterial
+
 # Hardening laws etc. 
 include("plasticity_components/YieldCriteria.jl")
 export VonMises, DruckerPrager
@@ -24,6 +28,9 @@ export ArmstrongFrederick, Delobelle, OhnoWang
 include("plasticity_components/OverstressFunctions.jl")
 export RateIndependent, NortonOverstress
 
+include("plasticity_components/Crystallography.jl")
+export BCC, BCC12, FCC, GenericCrystallography
+
 # Different material classes
 include("Elastic.jl")
 export LinearElastic
@@ -35,6 +42,9 @@ include("Plastic.jl")
 include("ExtraOutputs.jl")
 include("PlasticDifferentiate.jl")
 export Plastic
+
+include("CrystalPlasticity.jl")
+export CrystalPlasticity
 
 include("hyper_elasticity/HyperElastic.jl")
 include("hyper_elasticity/NeoHooke.jl")

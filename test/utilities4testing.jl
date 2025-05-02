@@ -1,11 +1,11 @@
-function run_shear(m, γmax, numsteps; TT=SymmetricTensor)
+function run_shear(m, γmax, numsteps, Δt = nothing; TT=SymmetricTensor)
     state = initial_material_state(m)
     Δϵ = TT{2,3}((i,j)-> i==2 && j==1 ? γmax/numsteps : zero(γmax))
     s21 = zeros(numsteps+1)
     local σ, dσdϵ, ϵ
     for i = 1:numsteps
         ϵ = i*Δϵ
-        σ, dσdϵ, state = material_response(m, ϵ, state)
+        σ, dσdϵ, state = material_response(m, ϵ, state, Δt)
         s21[i+1] = σ[2,1]
     end
     return s21, σ, dσdϵ, state, ϵ

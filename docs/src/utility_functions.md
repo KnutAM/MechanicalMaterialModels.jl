@@ -11,3 +11,8 @@ vonmises_and_gradient
 macaulay
 convert_hooke_param
 ```
+
+# Material wrappers
+```@docs
+RotatedMaterial
+```
