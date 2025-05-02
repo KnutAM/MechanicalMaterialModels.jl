@@ -11,4 +11,6 @@
     Δϵ21 = 0.01
     N = 100
     s21, σ, dσdϵ, state, ϵ = run_shear(m, Δϵ21, N, 1e-3)
+
+    s11, σ, dσdϵ, state, ϵ = run_normal(m, Δϵ21, N; Δt = 1e-3)
 end
