@@ -55,7 +55,7 @@ struct LinearElastic{T, case, N} <: AbstractMaterial
     p::SVector{N,T}
 end
 
-MMB.get_parameter_type(::LinearElastic{T}) where T = T
+MMB.get_params_eltype(::LinearElastic{T}) where T = T
 
 # General symmetry
 LinearElastic{:general}(C::SymmetricTensor) = LinearElastic(C)
@@ -96,14 +96,14 @@ calculate_stress(m::LinearElastic, ϵ::SymmetricTensor) = m.C⊡ϵ
 # Functions for conversion between material and parameter vectors
 MMB.get_num_params(::LinearElastic{<:Any,<:Any,N}) where{N} = N
 
-function MMB.vector2material(v::AbstractVector, ::LinearElastic{<:Any, :isotropic}; offset=0)
+function MMB.fromvector(v::AbstractVector, ::LinearElastic{<:Any, :isotropic}; offset=0)
     return LinearElastic{:isotropic}(;E=v[offset+1], ν=v[offset+2])
 end
-function MMB.vector2material(v::AbstractVector, ::LinearElastic{<:Any, :cubicsymmetry}; offset=0)
+function MMB.fromvector(v::AbstractVector, ::LinearElastic{<:Any, :cubicsymmetry}; offset=0)
     return LinearElastic{:cubicsymmetry}(;C1111=v[offset+1], C1122=v[offset+2], C1212=v[offset+3])
 end
 
-function MMB.material2vector!(v::AbstractVector, m::LinearElastic; offset=0)
+function MMB.tovector!(v::AbstractVector, m::LinearElastic; offset=0)
     for (i, p) in pairs(m.p)
         v[offset+i] = p
     end
@@ -113,8 +113,8 @@ end
 # Differentiation
 function MMB.differentiate_material!(deriv::MaterialDerivatives{T}, m::LinearElastic, ϵ, ⁿs, Δt, ::Any, ::AbstractExtraOutput, dσdϵ) where {T}
     tomandel!(deriv.dσdϵ, dσdϵ)
-    p = material2vector(m)
-    σ_from_param(p_vector) = tomandel(calculate_stress(vector2material(p_vector, m), ϵ))
+    p = tovector(m)
+    σ_from_param(p_vector) = tomandel(calculate_stress(fromvector(p_vector, m), ϵ))
     ForwardDiff.jacobian!(deriv.dσdp,σ_from_param,p)
     
     fill!(deriv.dσdⁿs,  zero(T))

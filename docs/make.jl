@@ -20,6 +20,7 @@ makedocs(;
         "Finite Strains" => "finite_strains.md",
         "Model Components" => "model_components.md",
         "Utility Functions" => "utility_functions.md",
+        "Examples" => "example.md",
         "Developer Docs" => "devdocs.md",
     ],
 )
@@ -27,4 +28,5 @@ makedocs(;
 deploydocs(;
     repo="github.com/KnutAM/MechanicalMaterialModels.jl",
     devbranch="main",
+    push_preview=true,
 )

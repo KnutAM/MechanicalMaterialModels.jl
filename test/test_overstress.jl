@@ -2,7 +2,7 @@
     @testset "RateIndependent" begin
         of = RateIndependent()
         @test MMB.get_num_params(of) == 0
-        @test of == vector2material(rand(10), of)
+        @test of == fromvector(rand(10), of)
         
         @test contains(show_as_string(of), "Rate independent response")
     end

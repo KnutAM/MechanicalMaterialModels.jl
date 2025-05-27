@@ -1,11 +1,11 @@
-function run_shear(m, γmax, numsteps; TT=SymmetricTensor)
+function run_shear(m, γmax, numsteps, Δt = nothing; TT=SymmetricTensor)
     state = initial_material_state(m)
     Δϵ = TT{2,3}((i,j)-> i==2 && j==1 ? γmax/numsteps : zero(γmax))
     s21 = zeros(numsteps+1)
     local σ, dσdϵ, ϵ
     for i = 1:numsteps
         ϵ = i*Δϵ
-        σ, dσdϵ, state = material_response(m, ϵ, state)
+        σ, dσdϵ, state = material_response(m, ϵ, state, Δt)
         s21[i+1] = σ[2,1]
     end
     return s21, σ, dσdϵ, state, ϵ
@@ -29,15 +29,17 @@ function run_normal(m, ϵ11_vec; Δt = NaN, stress_state=UniaxialNormalStress(),
 end
 
 function obtain_numerical_material_derivative!(deriv, m, ϵ, old, Δt)
-    p = material2vector(m)
+    p = tovector(m)
     # σ, dσdϵ, state = material_response(m, ϵ, old, Δt)
     dmdz = (σ = (ϵ = deriv.dσdϵ, s = deriv.dσdⁿs, p = deriv.dσdp),
             s = (ϵ = deriv.dsdϵ, s = deriv.dsdⁿs, p = deriv.dsdp))
-    funs = Tuple((ϵ=evec -> tomandel(material_response(m, frommandel(typeof(ϵ),evec), old, Δt)[i]),          # f(ϵ)
-                  s=svec -> tomandel(material_response(m, ϵ, frommandel(typeof(old),svec), Δt)[i]),          # f(s)
-                  p=pvec -> tomandel(material_response(MMB.vector2material(pvec,m), ϵ, old, Δt)[i])) # f(p)
+    _tovector(t::AbstractTensor) = tomandel(t)
+    _tovector(s::AbstractMaterialState) = tovector(s)
+    funs = Tuple((ϵ=evec -> _tovector(material_response(m, frommandel(typeof(ϵ),evec), old, Δt)[i]), # f(ϵ)
+                  s=svec -> _tovector(material_response(m, ϵ, MMB.fromvector(svec, old), Δt)[i]),    # f(s)
+                  p=pvec -> _tovector(material_response(fromvector(pvec, m), ϵ, old, Δt)[i]))    # f(p)
                 for i in [1,3])
-    x0 = (ϵ=tomandel(ϵ), s=tomandel!(zeros(get_num_statevars(m)),old), p=p)
+    x0 = (ϵ = tomandel(ϵ), s = tovector(old), p = p)
     for (i, m) in enumerate((:σ,:s))
         tmp1 = getfield(dmdz,m)
         for z in fieldnames(typeof(x0))
@@ -59,8 +61,8 @@ function obtain_numerical_material_derivative!(deriv, m::LinearElastic, ϵ, old,
             s = (ϵ = deriv.dsdϵ, s = deriv.dsdⁿs, p = deriv.dsdp))
     # σ, dσdϵ, state = material_response(m, ϵ, old, Δt)
     funs = (ϵ=evec -> tomandel(material_response(m, frommandel(typeof(ϵ),evec), old, Δt)[1]),          # f(ϵ)
-            p=pvec -> tomandel(material_response(vector2material(pvec,m), ϵ, old, Δt)[1])) # f(p)
-    x0 = (ϵ=tomandel(ϵ), p=material2vector(m))
+            p=pvec -> tomandel(material_response(fromvector(pvec,m), ϵ, old, Δt)[1])) # f(p)
+    x0 = (ϵ=tomandel(ϵ), p=tovector(m))
     
     dσdz = getfield(dmdz,:σ)
     for z in fieldnames(typeof(x0))
@@ -73,8 +75,8 @@ end
 function test_conversion(mbase)
     v0 = [rand() for _ in 1:MMB.get_num_params(mbase)]
     v1 = similar(v0)
-    m = vector2material(v0, mbase)
-    material2vector!(v1, m)
+    m = fromvector(v0, mbase)
+    tovector!(v1, m)
     @test v0 ≈ v1
 end
 

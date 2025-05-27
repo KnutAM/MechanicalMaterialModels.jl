@@ -30,11 +30,11 @@
     # Conversions
     function check_conversions(m)
         v = rand(get_num_params(m))
-        mr = vector2material(v, m)
-        vc = material2vector(mr)
+        mr = fromvector(v, m)
+        vc = tovector(mr)
         @test vc ≈ v 
         fill!(vc, rand())
-        material2vector!(vc, mr)
+        tovector!(vc, mr)
         @test vc ≈ v
     end
 
