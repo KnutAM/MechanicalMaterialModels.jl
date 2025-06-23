@@ -1,12 +1,16 @@
-function run_shear(m, γmax, numsteps, Δt = nothing; TT=SymmetricTensor)
+function run_shear(m, γmax::Number, numsteps::Int, Δt = nothing; TT=SymmetricTensor)
+    γv = range(0, γmax, numsteps + 1)
+    return run_shear(m, γv, Δt; TT)
+end
+
+function run_shear(m, γv::AbstractVector, Δt = nothing; TT = SymmetricTensor)
     state = initial_material_state(m)
-    Δϵ = TT{2,3}((i,j)-> i==2 && j==1 ? γmax/numsteps : zero(γmax))
-    s21 = zeros(numsteps+1)
+    s21 = zeros(length(γv))
     local σ, dσdϵ, ϵ
-    for i = 1:numsteps
-        ϵ = i*Δϵ
+    for (k, ϵ21) in enumerate(γv[2:end])
+        ϵ = TT{2,3}((i,j)-> i==2 && j==1 ? ϵ21 : zero(ϵ21))
         σ, dσdϵ, state = material_response(m, ϵ, state, Δt)
-        s21[i+1] = σ[2,1]
+        s21[k+1] = σ[2,1]
     end
     return s21, σ, dσdϵ, state, ϵ
 end

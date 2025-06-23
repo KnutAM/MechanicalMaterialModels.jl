@@ -8,22 +8,13 @@
     β∞::T 
 end
 
-function SimplePlastic(mp::Plastic)
-    if !isa(mp.elastic, LinearElastic{<:Any, :isotropic})
-        error("elastic part must be isotropic")
-    end
-    isa(mp.yield, VonMises) || error("yield criterion must be von Mises")
-    if length(mp.isotropic) != 1
-        if !isa(only(mp.isotropic), Voce)
-            error("Only a single isotropic hardening, which must be Voce, is allowed")
-        end
-    end
-    if length(mp.kinematic) != 1
-        if isa(only(mp.kinematic), ArmstrongFrederick)
-            error("Only a single kinematic hardening, which must be ArmstrongFrederick, is allowed")
-        end
-    end
-    isa(mp.overstress, RateIndependent) || error("Only rate-independent material allowed")
+function SimplePlastic(mp::Plastic{Ela, Yld, Iso, Kin, Rat}) where {
+        Ela <: LinearElastic{<:Any, :isotropic},
+        Yld <: VonMises,
+        Iso <: Tuple{<:Voce},
+        Kin <: Tuple{<:ArmstrongFrederick},
+        Rat <: RateIndependent
+        }
     
     E, ν = mp.elastic.p 
     return SimplePlastic(;
