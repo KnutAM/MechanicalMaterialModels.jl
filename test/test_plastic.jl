@@ -123,7 +123,7 @@ end
     @test ϵ ≈ ϵ_s
 
     # Test stability
-    γv = [0.0, 0.5, -0.5, 0.0, -1.0, 1.0];
+    γv = [0.0, 0.5, -0.5, 0.0, -1.0, 1.0]
     @test_throws NoLocalConvergence run_shear(m0, γv)
     run_shear(m0_simple, γv)
 end

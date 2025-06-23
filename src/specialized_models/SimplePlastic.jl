@@ -100,7 +100,9 @@ function residual(Δλ, m::SimplePlastic, ϵ::SymmetricTensor, old::SimplePlasti
     return Φ
 end
 
-
+#=
+# Extra stability, but doesn't seem to be hit in normal cases.
+# Therefore, excluded as it is not tested.
 function bisect_solve(rf, x0::Number; maxiter = 200, tol = 1e-6)
     x_left = zero(x0)
     x_right = x0
@@ -137,3 +139,4 @@ function bisect_solve(rf, x0::Number; maxiter = 200, tol = 1e-6)
     end
     error("Did not find sufficiently small residual")
 end
+=#
