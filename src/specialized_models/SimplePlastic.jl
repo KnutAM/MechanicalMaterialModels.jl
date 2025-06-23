@@ -44,6 +44,9 @@ function MMB.material_response(m::SimplePlastic, ϵ::SymmetricTensor{2,3}, old::
         return σ_trial, E4, old 
     else
         rf(x) = residual(x, m, ϵ, old)
+        Δλ, ∂r∂x, converged = newtonsolve(rf, 0.0)
+        #=
+        # Using bisection
         Δλ1, ∂r∂x1, converged = newtonsolve(rf, 0.0)
         # Workaround to avoid Δλ and ∂r∂x as `Core.Box`:ed
         Δλ, ∂r∂x = if !converged || Δλ1 < 0 
@@ -53,7 +56,10 @@ function MMB.material_response(m::SimplePlastic, ϵ::SymmetricTensor{2,3}, old::
         else
             (Δλ1, ∂r∂x1)
         end
-        if true # converged
+        converged = true
+        =#
+
+        if converged
             ∂σ∂ϵ = gradient(e -> calculate_sigma(Δλ, m, e, old), ϵ)
             ∂σ∂x, σ = gradient(x -> calculate_sigma(x, m, ϵ, old), Δλ, :all)
             ∂r∂ϵ = gradient(e -> residual(Δλ, m, e, old), ϵ)
