@@ -67,3 +67,63 @@
     @test contains(show_str, "ArmstrongFrederick")
     @test contains(show_str, "Norton overstress")
 end
+
+@testset "SimplePlastic" begin
+    # Run an example, compare with Plastic
+    E = 210.e3;     ν = 0.3
+    Y0 = 150.0
+    Hkin = 1 * 10e3;    β∞ = 25.0
+    Hiso = 1 * 13e3;    κ∞ = 35.0
+    G = E/(2 * (1 + ν))
+    K = E / (3 * (1 - 2 * ν))
+    elastic = LinearElastic(;E, ν)
+    kinematic = ArmstrongFrederick(;Hkin, β∞)
+    isotropic = Voce(;Hiso, κ∞)
+    m0 = Plastic(;elastic, yield = Y0, kinematic, isotropic)
+    m0_simple = SimplePlastic(; G, K, Y0, Hiso, κ∞, Hkin, β∞)
+    m0_simple_from_plastic = SimplePlastic(m0)
+    for key in fieldnames(typeof(m0_simple))
+        @test getproperty(m0_simple, key) ≈ getproperty(m0_simple_from_plastic, key)
+    end
+
+    Δϵ21 = 0.01
+    N = 100
+    s21, σ, dσdϵ, state, ϵ0 = run_shear(m0, Δϵ21, N)
+
+    ϵp_old = state.ϵp
+    κold = state.κ[1]
+    βold = state.β[1]
+    old = MechanicalMaterialModels.SimplePlasticState(ϵp_old, βold, κold)
+
+    ϵt = SymmetricTensor{2,3}((i,j) -> i==2 && j==1 ? ϵ0[i, j] + 1e-4 : 0.0)
+
+    extras = allocate_differentiation_output(m0)
+    σ1, dσdϵ1, state1 = material_response(m0, ϵt, state, 0.1, allocate_material_cache(m0), extras)
+
+    σ_s, dσdϵ_s, state_s = material_response(m0_simple, ϵt, old, 0.1)
+
+    Δλ = extras.X.Δλ
+    # κ = MechanicalMaterialModels.calculate_κ(Δλ, m0_simple, old)
+    σdev, β, κ = MechanicalMaterialModels.calculate_evolution(Δλ, m0_simple, ϵt, old)
+
+    @test state1.κ[1] ≈ state_s.κ ≈ κ
+    @test state1.β[1] ≈ state_s.β ≈ β
+    @test state1.ϵp ≈ state_s.ϵp
+    @test dev(σ1) ≈ dev(σ_s) ≈ σdev
+    @test σ1 ≈ σ_s
+
+    Δϵ21 = 0.01
+    N = 100
+    s21, σ, dσdϵ, state, ϵ = run_shear(m0, Δϵ21, N)
+    s21_s, σ_s, dσdϵ_s, state_s, ϵ_s = run_shear(m0_simple, Δϵ21, N)
+    # Using tol=1e-10 in newtonsolve inside material_response makes them pass standard ≈ test...
+    @test isapprox(s21, s21_s; atol = abs(s21[end]) * 1e-6)
+    @test σ ≈ σ_s
+    @test dσdϵ ≈ dσdϵ_s
+    @test ϵ ≈ ϵ_s
+
+    # Test stability
+    γv = [0.0, 0.5, -0.5, 0.0, -1.0, 1.0]
+    @test_throws NoLocalConvergence run_shear(m0, γv)
+    run_shear(m0_simple, γv)
+end
