@@ -79,19 +79,19 @@ function MMB.tovector(r::AbstractResidual)
 end
 
 """
-    vector_residual!(rf::Function, r_vector::AbstractVector, x_vector::AbstractVector, x::AbstractResidual)
+    vector_residual!(rf::Function, r_vector::AbstractVector, x_vector::AbstractVector, xbase::RT)
 
 Makes it easy to construct a mutating vector residual function from a tensor-like equation,
 `r = rf(x) = residual(x, args...)`, e.g.
 `rf!(r_vector, x_vector) = vector_residual!(z -> residual(z, args...), r_vector, x_vector, x)`
 
-The input `x` and output `r` of `rf` should have the same type, `RT <: AbstractResidual`, 
-and support `MaterialModelsBase.tovector!` and `MaterialModelsBase.fromvector!`
+The input `x::RT` must support MaterialModelsBase.fromvector, and the output `r` from `rf` 
+must support`MaterialModelsBase.fromvector!`.
 
-The approach was adopted from https://github.com/kimauth/MaterialModels.jl
+The approach was adopted from [MaterialModels.jl](https://github.com/kimauth/MaterialModels.jl)
 """
-function vector_residual!(rf::F, r_vector::AbstractVector{T}, x_vector::AbstractVector{T}, x::AbstractResidual) where {F<:Function, T}
-    x_tensor = fromvector(x_vector, x)
+function vector_residual!(rf::F, r_vector::AbstractVector{T}, x_vector::AbstractVector{T}, xbase) where {F<:Function, T}
+    x_tensor = fromvector(x_vector, xbase)
     r_tensor = rf(x_tensor)
     tovector!(r_vector, r_tensor)
     return r_vector
