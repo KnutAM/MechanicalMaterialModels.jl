@@ -115,12 +115,10 @@ function MMB.differentiate_material!(deriv::MaterialDerivatives{T}, m::LinearEla
     tomandel!(deriv.dσdϵ, dσdϵ)
     p = tovector(m)
     σ_from_param(p_vector) = tomandel(calculate_stress(fromvector(p_vector, m), ϵ))
-    ForwardDiff.jacobian!(deriv.dσdp,σ_from_param,p)
+    ForwardDiff.jacobian!(deriv.dσdp, σ_from_param, p)
     
-    fill!(deriv.dσdⁿs,  zero(T))
-    fill!(deriv.dsdϵ,  zero(T))
-    fill!(deriv.dsdp,  zero(T))
-    fill!(deriv.dsdⁿs,  zero(T))
+    fill!(deriv.dsdϵ, zero(T))
+    fill!(deriv.dsdp, zero(T))
 end
 
 # Show methods

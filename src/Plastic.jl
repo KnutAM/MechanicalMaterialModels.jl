@@ -150,7 +150,7 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
         rf!(r_vector, x_vector) = vector_residual!(xx->residual(xx, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
         x_vector = getx(cache.newton)
         tovector!(x_vector, x)
-        x_vector, dRdx, converged = newtonsolve(rf!, x_vector, cache.newton)
+        x_vector, dRdx, converged = newtonsolve(rf!, x_vector, cache.newton; tol = 1e-8)
         if converged
             x_sol = fromvector(x_vector, x)
             check_solution(x_sol)

@@ -2,6 +2,7 @@ using Tensors, ForwardDiff, FiniteDiff, LinearAlgebra
 
 using MechanicalMaterialModels
 import MechanicalMaterialModels as MechMat
+import MaterialModelsTesting as MatTest
 
 using MaterialModelsBase
 import MaterialModelsBase as MMB

@@ -10,8 +10,9 @@ mutable struct DiffOutputHelper{TX, T} <: AbstractExtraOutput
     const ∂R∂ⁿsᴹ::Matrix{T}
     const ∂R∂pᴹ::Matrix{T}
     const ∂s∂Xᴹ::Matrix{T}
-    const ∂s∂ⁿsᴹ::Matrix{T}
     const ∂s∂pᴹ::Matrix{T}
+    const dσdⁿsᴹ::Matrix{T}
+    const dsdⁿsᴹ::Matrix{T}
 end
 
 function DiffOutputHelper(m::AbstractMaterial)
@@ -26,9 +27,10 @@ function DiffOutputHelper(m::AbstractMaterial)
     ∂R∂ⁿsᴹ = zeros(T, NR, Ns)
     ∂R∂pᴹ  = zeros(T, NR, Np)
     ∂s∂Xᴹ  = zeros(T, Ns, NR)
-    ∂s∂ⁿsᴹ = zeros(T, Ns, Ns)
     ∂s∂pᴹ  = zeros(T, Ns, Np)
-    return DiffOutputHelper(X, dRdX_invᴹ, false, ∂R∂ϵᴹ, ∂R∂ⁿsᴹ, ∂R∂pᴹ, ∂s∂Xᴹ, ∂s∂ⁿsᴹ, ∂s∂pᴹ)
+    dσdⁿsᴹ = zeros(T, Nσ, Ns)
+    dsdⁿsᴹ = zeros(T, Ns, Ns)
+    return DiffOutputHelper(X, dRdX_invᴹ, false, ∂R∂ϵᴹ, ∂R∂ⁿsᴹ, ∂R∂pᴹ, ∂s∂Xᴹ, ∂s∂pᴹ, dσdⁿsᴹ, dsdⁿsᴹ)
 end
 
 update_extras!(extras::DiffOutputHelper) = (extras.updated = false)
