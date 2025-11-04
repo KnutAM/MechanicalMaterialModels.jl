@@ -16,6 +16,7 @@ which has no influence if `C` truly is incompressible, i.e. ``\\det(\\boldsymbol
 end
 
 compute_potential(m::NeoHooke, C::SymmetricTensor) = (m.G / 2) * (tr(C) / cbrt(det(C)) - 3)
+MMB.get_params_eltype(::NeoHooke{T}) where {T} = T
 
 """
     CompressibleNeoHooke(; G, K)
@@ -42,3 +43,5 @@ function compute_potential(m::CompressibleNeoHooke, C::SymmetricTensor)
     ΨK = (m.K / 2) * (sqrt(detC) - 1)^2
     return ΨG + ΨK
 end
+
+MMB.get_params_eltype(::CompressibleNeoHooke{T}) where {T} = T

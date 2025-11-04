@@ -28,18 +28,20 @@ m = Plastic(elastic = LinearElastic(E=210.e3, ν=0.3),
 ```
 
 """
-struct Plastic{E,YLD,IsoH,KinH,OS} <: AbstractMaterial
+struct Plastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     elastic::E          # Elastic definition
     yield::YLD          # Initial yield limit
     isotropic::IsoH     # Tuple of isotropic hardening definitions
     kinematic::KinH     # Tuple of kinematic hardening definitions
     overstress::OS      # Overstress function
+    maxiter::Int        # Maximum number of iterations for local problem (default 100)
+    tolerance::T        # Absolute tolerance for local problem (default √eps(T))
 end
-function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent())
+function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_params_eltype(elastic))))
     iso = maketuple_or_nothing(isotropic)
     kin = maketuple_or_nothing(kinematic)
     yld = default_yield_criteria(yield)
-    return Plastic(elastic, yld, iso, kin, overstress)
+    return Plastic(elastic, yld, iso, kin, overstress, maxiter, tolerance)
 end
 
 MMB.get_params_eltype(m::Plastic) = MMB.get_params_eltype(m.elastic)
@@ -113,7 +115,7 @@ function MMB.fromvector(v::AbstractVector, ::PlasticResidual{NKin,NIso}; offset=
     return PlasticResidual(σ, Δλ, κ, β)
 end
 
-struct PlasticCache{TN,TR}
+struct PlasticCache{TN,TR} <: AbstractMaterialCache
     newton::TN  # NewtonCache if needed, otherwise nothing
     resid::TR   # Cache used in residual function if needed, otherwise nothing
 end
@@ -142,7 +144,7 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
     σ_trial, dσdϵ_elastic = elastic_response(m, ϵ, old)
     Φ_trial = yield_criterion(m.yield, σ_trial-sum(old.β), sum(old.κ))
 
-    if Φ_trial < 0
+    if real(Φ_trial) < 0
         update_extras!(extras)
         return σ_trial, dσdϵ_elastic, old
     else
@@ -150,7 +152,7 @@ function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::Plasti
         rf!(r_vector, x_vector) = vector_residual!(xx->residual(xx, m, old, ϵ, Δt, cache.resid), r_vector, x_vector, x)
         x_vector = getx(cache.newton)
         tovector!(x_vector, x)
-        x_vector, dRdx, converged = newtonsolve(rf!, x_vector, cache.newton; tol = 1e-8)
+        x_vector, dRdx, converged = newtonsolve(rf!, x_vector, cache.newton; tol = m.tolerance, maxiter = m.maxiter)
         if converged
             x_sol = fromvector(x_vector, x)
             check_solution(x_sol)
@@ -239,7 +241,7 @@ function MMB.fromvector(v::AbstractVector, m::Plastic; offset=0)
     # The following constructor call doesn't seem to be type stable when used in e.g. differentiate_material. 
     # Should be checked for (a) v and m same eltype and (b) v Dual and m Float64 eltypes.
     #return Plastic(;elastic, yield, isotropic, kinematic, overstress)
-    return Plastic(elastic, yield, isotropic, kinematic, overstress)
+    return Plastic(elastic, yield, isotropic, kinematic, overstress, m.maxiter, m.tolerance)
 end
 
 function MMB.tovector!(v::AbstractVector, m::Plastic; offset=0)

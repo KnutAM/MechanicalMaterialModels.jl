@@ -28,22 +28,24 @@ m = FiniteStrainPlastic(elastic = CompressibleNeoHooke(G=80.e3, K=160.e3),
 ```
 
 """
-struct FiniteStrainPlastic{E,YLD,IsoH,KinH,OS} <: AbstractMaterial
+struct FiniteStrainPlastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     elastic::E          # Elastic definition
     yield::YLD          # Initial yield limit
     isotropic::IsoH     # Tuple of isotropic hardening definitions
     kinematic::KinH     # Tuple of kinematic hardening definitions
     overstress::OS      # Overstress function
+    maxiter::Int        # Maximum number of iterations for local problem (default 10)
+    tolerance::T        # Absolute tolerance for local problem (default √eps(T))
 end
-function FiniteStrainPlastic(;elastic::AbstractHyperElastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent())
+function FiniteStrainPlastic(;elastic::AbstractHyperElastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_params_eltype(elastic))))
     iso = maketuple_or_nothing(isotropic)
     kin = maketuple_or_nothing(kinematic)
     yld = default_yield_criteria(yield)
-    return FiniteStrainPlastic(elastic, yld, iso, kin, overstress)
+    return FiniteStrainPlastic(elastic, yld, iso, kin, overstress, maxiter, tolerance)
 end
 
-
 MMB.get_params_eltype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
+MMB.get_tensorbase(::FiniteStrainPlastic) = Tensor{2, 3}
 
 # Definition of material state
 struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin}} <: AbstractMaterialState
@@ -96,22 +98,12 @@ function MMB.fromvector(v::AbstractVector{T}, ::FiniteStrainPlasticResidual{NKin
     return FiniteStrainPlasticResidual(Mred, Δλ, κ, Mk)
 end
 
-function MMB.allocate_material_cache(m::FiniteStrainPlastic)
-    T = MMB.get_params_eltype(m)
-    s = initial_material_state(m)
-    F = one(Tensor{2,3})
-    x = initial_guess(m, s, F)
-    xv = Vector{T}(undef, get_num_unknowns(x))
-    rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, F, zero(T)), r_vector, x_vector, x)
-    return NewtonCache(xv)
-end
-
 function mandel_stress(m_el::AbstractHyperElastic, Fe::Tensor{2,3})
     Ce = tdot(Fe)
     return Ce ⋅ compute_stress(m_el, Ce)
 end
 
-function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::FiniteStrainPlasticState, Δt, cache, extras)
+function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::FiniteStrainPlasticState, Δt, _, extras)
     Fpinv = inv(old.Fp)
     Fe = F ⋅ Fpinv
     M = mandel_stress(m.elastic, Fe)
@@ -125,7 +117,7 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
     else
         x0 = initial_guess(m, old, M)
         rf(x) = tovector(SVector, residual(fromvector(x, x0), m, old, F, Δt))
-        x_vector, ∂R∂X, converged = newtonsolve(rf, tovector(SVector, x0))
+        x_vector, ∂R∂X, converged = newtonsolve(rf, tovector(SVector, x0); maxiter = m.maxiter, tol = m.tolerance)
 
         if converged
             x_sol = fromvector(x_vector, x0)
@@ -150,7 +142,7 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
             
             return P, dPdF, new
         else
-            throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve! didn't converge, F = ", F))
+            throw(MMB.NoLocalConvergence("$(typeof(m)): newtonsolve didn't converge, F = ", F))
         end
     end
 end

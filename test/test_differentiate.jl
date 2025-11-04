@@ -92,12 +92,14 @@ end
                 end
                 @testset "After shear loading" begin
                     num_steps = 10; t_end = 0.01
-                    ϵ21 = num_steps * 0.1 * 3 * σ_y0 / E; 
+                    ϵ21 = num_steps * 0.1 * 3 * σ_y0 / E;
                     relstep = 1e-6
                     stressfun(p) = MatTest.runstrain(fromvector(p, m), ϵ21, (2, 1), t_end, num_steps)[1]
-                    dσ21_dp_num = FiniteDiff.finite_difference_jacobian(stressfun, tovector(m), Val{:central}; relstep)
+                    dσ21_dp_num = FiniteDiff.finite_difference_jacobian(stressfun, BigFloat.(tovector(m)), Val{:central}; relstep)
                     σv, state, dσ21_dp, diff = MatTest.runstrain_diff(m, ϵ21, (2, 1), t_end, num_steps)
                     @test σv ≈ stressfun(tovector(m))
+                    #@test dσ21_dp ≈ dσ21_dp_num
+                    isapprox(dσ21_dp_num, dσ21_dp; atol = 1000 * eps())
                     scaled_error, maxtol = MatTest.compare_derivatives(dσ21_dp, dσ21_dp_num, σv, tovector(m) * relstep; atol_min = 1e-12, rtol_min = 1e-4, print_tol = false)
                     @test all(x -> x ≤ 1, scaled_error)
                 end
@@ -120,8 +122,10 @@ end
                         ϵij = num_steps * 0.1 * 3 * σ_y0 / E
                         relstep = 1e-6
                         stressfun(p) = MatTest.runstresstate(stress_state, fromvector(p, m), ϵij, ij, t_end, num_steps)[1]
-                        dσij_dp_num = FiniteDiff.finite_difference_jacobian(stressfun, tovector(m), Val{:central}; relstep)
+                        dσij_dp_num = FiniteDiff.finite_difference_jacobian(stressfun, BigFloat.(tovector(m)), Val{:central}; relstep)
                         σv, state, dσij_dp, diff = MatTest.runstresstate_diff(stress_state, m, ϵij, ij, t_end, num_steps)
+                        isapprox(dσij_dp_num, dσij_dp; atol = 1000 * eps())
+                        
                         scaled_error, maxtol = MatTest.compare_derivatives(dσij_dp, dσij_dp_num, σv, tovector(m) * relstep; atol_min = 1e-6, rtol_min = 1e-4, print_tol = false)
                         if !all(x -> x ≤ 1, scaled_error)
                             display(scaled_error)

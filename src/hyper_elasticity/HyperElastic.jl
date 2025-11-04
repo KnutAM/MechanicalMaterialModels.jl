@@ -36,12 +36,13 @@ function compute_stress_and_tangent(m::AbstractHyperElastic, C::SymmetricTensor)
     return S, 2*∂S∂C
 end
 
-function MMB.material_response(m::AbstractHyperElastic, F::Tensor{2,3}, args...)
+function MMB.material_response(m::AbstractHyperElastic, F::Tensor{2,3}, old::AbstractMaterialState, args...)
     C = tdot(F)
     S, ∂S∂E = compute_stress_and_tangent(m, C)
     P = F ⋅ S 
     I2 = one(F)
     ∂P∂F = F ⋅ ∂S∂E ⊡ otimesu(F',I2) + otimesu(I2, S)
-    return P, ∂P∂F, NoMaterialState()
+    return P, ∂P∂F, old
 end
 
+MMB.get_tensorbase(::AbstractHyperElastic) = Tensor{2,3}
