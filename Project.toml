@@ -27,9 +27,9 @@ MaterialModelsTesting = "882b014b-b96c-4115-8629-e17fb35110d2"
 test = ["Test", "ForwardDiff", "FiniteDiff", "MaterialModelsTesting"]
 
 [sources]
-# MaterialModelsBase = {rev = "kam/diffinterface", url = "https://github.com/knutam/MaterialModelsBase.jl"}
-MaterialModelsBase = {path = "/Users/knutan/.julia/dev/MaterialModelsBase"}
+MaterialModelsBase = {rev = "kam/diffinterface", url = "https://github.com/knutam/MaterialModelsBase.jl"}
+# MaterialModelsBase = {path = "/Users/knutan/.julia/dev/MaterialModelsBase"}
 Newton = {url = "https://github.com/knutam/Newton.jl"}
 #Newton = {path = "/Users/knutan/.julia/dev/Newton"}
-#MaterialModelsTesting = {url = "https://github.com/KnutAM/MaterialModelsTesting.jl"}
-MaterialModelsTesting = {path = "/Users/knutan/.julia/dev/MaterialModelsTesting"}
+MaterialModelsTesting = {url = "https://github.com/KnutAM/MaterialModelsTesting.jl"}
+# MaterialModelsTesting = {path = "/Users/knutan/.julia/dev/MaterialModelsTesting"}
