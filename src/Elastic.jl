@@ -55,7 +55,7 @@ struct LinearElastic{T, case, N} <: AbstractMaterial
     p::SVector{N,T}
 end
 
-MMB.get_params_eltype(::LinearElastic{T}) where T = T
+MMB.get_vector_eltype(::LinearElastic{T}) where T = T
 
 # General symmetry
 LinearElastic{:general}(C::SymmetricTensor) = LinearElastic(C)
@@ -94,7 +94,7 @@ end
 calculate_stress(m::LinearElastic, ϵ::SymmetricTensor) = m.C⊡ϵ
 
 # Functions for conversion between material and parameter vectors
-MMB.get_num_params(::LinearElastic{<:Any,<:Any,N}) where{N} = N
+MMB.get_vector_length(::LinearElastic{<:Any,<:Any,N}) where{N} = N
 
 function MMB.fromvector(v::AbstractVector, ::LinearElastic{<:Any, :isotropic}; offset=0)
     return LinearElastic{:isotropic}(;E=v[offset+1], ν=v[offset+2])

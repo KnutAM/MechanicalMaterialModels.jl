@@ -16,7 +16,7 @@
     # Test for the full material
     param = vcat(pel, σ_y0, piso, pkin)
     @test m1 == MMB.fromvector(param, m1)
-    pvec = zeros(get_num_params(m1))
+    pvec = zeros(get_vector_length(m1))
     @test length(pvec) == length(param)
     MMB.tovector!(pvec, m1)
     @test pvec == param

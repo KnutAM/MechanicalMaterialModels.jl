@@ -37,14 +37,14 @@ struct FiniteStrainPlastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     maxiter::Int        # Maximum number of iterations for local problem (default 10)
     tolerance::T        # Absolute tolerance for local problem (default √eps(T))
 end
-function FiniteStrainPlastic(;elastic::AbstractHyperElastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_params_eltype(elastic))))
+function FiniteStrainPlastic(;elastic::AbstractHyperElastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_vector_eltype(elastic))))
     iso = maketuple_or_nothing(isotropic)
     kin = maketuple_or_nothing(kinematic)
     yld = default_yield_criteria(yield)
     return FiniteStrainPlastic(elastic, yld, iso, kin, overstress, maxiter, tolerance)
 end
 
-MMB.get_params_eltype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
+MMB.get_vector_eltype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
 MMB.get_tensorbase(::FiniteStrainPlastic) = Tensor{2, 3}
 
 # Definition of material state
@@ -55,7 +55,7 @@ struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin
 end
 
 function MMB.initial_material_state(m::FiniteStrainPlastic)
-    T = MMB.get_params_eltype(m)
+    T = MMB.get_vector_eltype(m)
     I2 = one(Tensor{2,3,T})
     FiniteStrainPlasticState(
         I2,                                  # Fp
@@ -78,7 +78,7 @@ function FiniteStrainPlasticResidual(Mred, Δλ, κ::Tuple, Mk::Tuple)
     return FiniteStrainPlasticResidual(Mred, Δλ, map(x->convert(Tκ, x), κ), map(x->convert(TMk, x), Mk))
 end
 
-function get_num_unknowns(::FiniteStrainPlasticResidual{NKin_m1,NIso}) where{NKin_m1,NIso}
+function MMB.get_vector_length(::FiniteStrainPlasticResidual{NKin_m1,NIso}) where{NKin_m1,NIso}
     return 10 + NIso + 9*NKin_m1
 end
 
@@ -233,20 +233,20 @@ end
 
 #=
 # Functions for conversion between material and parameter vectors
-function MMB.get_num_params(m::Plastic)
+function MMB.get_vector_length(m::Plastic)
     return sum((
-        get_num_params(m.elastic),
-        get_num_params(m.yield),
+        get_vector_length(m.elastic),
+        get_vector_length(m.yield),
         sum(get_num_params, m.isotropic),
         sum(get_num_params, m.kinematic),
-        get_num_params(m.overstress)))
+        get_vector_length(m.overstress)))
 end
 
 function fromvectortuple(v::AbstractVector, materialtuple; offset=0)
     n = 0
     mout = map(materialtuple) do mt
         m = fromvector(v, mt; offset=(offset+n))
-        n += get_num_params(m)
+        n += get_vector_length(m)
         m
     end
     return mout, n
@@ -254,28 +254,28 @@ end
 
 function MMB.fromvector(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    elastic = fromvector(v, m.elastic, offset=i); i += get_num_params(m.elastic)
-    yield = fromvector(v, m.yield, offset=i); i += get_num_params(m.yield)
+    elastic = fromvector(v, m.elastic, offset=i); i += get_vector_length(m.elastic)
+    yield = fromvector(v, m.yield, offset=i); i += get_vector_length(m.yield)
     
     isotropic, nisoparam = fromvectortuple(v, m.isotropic, offset=i); i+=nisoparam
     kinematic, nkinparam = fromvectortuple(v, m.kinematic, offset=i); i+=nkinparam
 
-    overstress = fromvector(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
+    overstress = fromvector(v, m.overstress, offset=i); # i += get_vector_length(m.overstress)
 
     return Plastic(;elastic, yield, isotropic, kinematic, overstress)
 end
 
 function MMB.tovector!(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    tovector!(v, m.elastic; offset=i); i += get_num_params(m.elastic)
-    tovector!(v, m.yield; offset=i); i += get_num_params(m.yield)
+    tovector!(v, m.elastic; offset=i); i += get_vector_length(m.elastic)
+    tovector!(v, m.yield; offset=i); i += get_vector_length(m.yield)
     for iso in m.isotropic
-        tovector!(v, iso;offset=i); i+= get_num_params(iso)
+        tovector!(v, iso;offset=i); i+= get_vector_length(iso)
     end
     for kin in m.kinematic
-        tovector!(v, kin; offset=i); i+= get_num_params(kin)
+        tovector!(v, kin; offset=i); i+= get_vector_length(kin)
     end
-    tovector!(v, m.overstress; offset=i); # i += get_num_params(m.overstress)
+    tovector!(v, m.overstress; offset=i); # i += get_vector_length(m.overstress)
     return v
 end
 

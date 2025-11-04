@@ -59,26 +59,6 @@ baseof(::TT) where{TT} = Tensors.get_base(TT)
 abstract type AbstractResidual end
 
 """
-    get_num_unknowns(res::AbstractResidual)
-
-Return the number of unknowns for the residual `res`
-"""
-function get_num_unknowns end
-
-"""
-    get_resid_eltype(res::AbstractResidual)
-
-Return the element type used to store `res` as a vector
-"""
-function get_resid_eltype end
-
-function MMB.tovector(r::AbstractResidual)
-    v = zeros(get_resid_eltype(r), get_num_unknowns(r))
-    MMB.tovector!(v, r)
-    return v
-end
-
-"""
     vector_residual!(rf::Function, r_vector::AbstractVector, x_vector::AbstractVector, xbase::RT)
 
 Makes it easy to construct a mutating vector residual function from a tensor-like equation,

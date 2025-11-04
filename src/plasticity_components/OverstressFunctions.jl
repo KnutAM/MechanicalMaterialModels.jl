@@ -9,7 +9,7 @@ the so-called KKT loading/unloading conditions
 """
 struct RateIndependent end
 
-MMB.get_num_params(::RateIndependent) = 0
+MMB.get_vector_length(::RateIndependent) = 0
 MMB.tovector!(v, ::RateIndependent; kwargs...) = nothing
 MMB.fromvector(v, ::RateIndependent; kwargs...) = RateIndependent()
 
@@ -40,7 +40,8 @@ end
 
 overstress_function(ratelaw::NortonOverstress, Φ, σy) = (1/ratelaw.tstar) * macaulay(Φ/σy)^ratelaw.nexp
 
-MMB.get_num_params(::NortonOverstress) = 2
+MMB.get_vector_length(::NortonOverstress) = 2
+MMB.get_vector_eltype(::NortonOverstress{TT, TN}) where {TT, TN} = promote_type(TT, TN)
 MMB.fromvector(v::AbstractVector, ::NortonOverstress; offset=0) = NortonOverstress(v[offset+1], v[offset+2])
 
 function MMB.tovector!(v::Vector, o::NortonOverstress; offset=0)

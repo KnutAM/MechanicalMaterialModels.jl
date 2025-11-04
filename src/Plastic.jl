@@ -37,14 +37,14 @@ struct Plastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     maxiter::Int        # Maximum number of iterations for local problem (default 100)
     tolerance::T        # Absolute tolerance for local problem (default √eps(T))
 end
-function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_params_eltype(elastic))))
+function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_vector_eltype(elastic))))
     iso = maketuple_or_nothing(isotropic)
     kin = maketuple_or_nothing(kinematic)
     yld = default_yield_criteria(yield)
     return Plastic(elastic, yld, iso, kin, overstress, maxiter, tolerance)
 end
 
-MMB.get_params_eltype(m::Plastic) = MMB.get_params_eltype(m.elastic)
+MMB.get_vector_eltype(m::Plastic) = MMB.get_vector_eltype(m.elastic)
 
 # Definition of material state
 struct PlasticState{NKin,NIso,Tϵp,Tκ,Tβ} <: AbstractMaterialState
@@ -55,15 +55,15 @@ struct PlasticState{NKin,NIso,Tϵp,Tκ,Tβ} <: AbstractMaterialState
 end
 
 function MMB.initial_material_state(m::Plastic)
-    T = MMB.get_params_eltype(m)
+    T = MMB.get_vector_eltype(m)
     PlasticState(zero(SymmetricTensor{2,3,T}), 
                  ntuple(i->get_initial_value(m.isotropic[i]), length(m.isotropic)), 
                  ntuple(i->zero(SymmetricTensor{2,3,T}), length(m.kinematic)))
 end
 
-MMB.get_num_statevars(::PlasticState{NK, NI}) where {NK, NI} = NI + 6*(1+NK)
+MMB.get_vector_length(::PlasticState{NK, NI}) where {NK, NI} = NI + 6*(1+NK)
 MMB.get_num_statevars(m::Plastic) = length(m.isotropic) + 6*(1 + length(m.kinematic))
-function MMB.get_statevar_eltype(::PlasticState{<:Any, <:Any, Tϵp, Tκ, Tβ}) where {Tϵp, Tκ, Tβ}
+function MMB.get_vector_eltype(::PlasticState{<:Any, <:Any, Tϵp, Tκ, Tβ}) where {Tϵp, Tκ, Tβ}
     return promote_type(Tϵp, Tκ, Tβ)
 end
 
@@ -91,11 +91,11 @@ struct PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ,Tβ} <: AbstractResidual
     β::NTuple{NKin, SymmetricTensor{2,3,Tβ,6}}
 end
 
-function get_resid_eltype(::PlasticResidual{<:Any, <:Any, Tσ, Tλ, Tκ, Tβ}) where {Tσ, Tλ, Tκ, Tβ}
+function MMB.get_vector_eltype(::PlasticResidual{<:Any, <:Any, Tσ, Tλ, Tκ, Tβ}) where {Tσ, Tλ, Tκ, Tβ}
     return promote_type(Tσ, Tλ, Tκ, Tβ)
 end
 
-get_num_unknowns(::PlasticResidual{NKin,NIso}) where {NKin, NIso} = 7 + NIso + 6 * NKin
+MMB.get_vector_length(::PlasticResidual{NKin,NIso}) where {NKin, NIso} = 7 + NIso + 6 * NKin
 
 function MMB.tovector!(v::AbstractVector, r::PlasticResidual{NKin, NIso}; offset = 0) where {NKin, NIso}
     tomandel!(v, r.σ; offset=offset)
@@ -121,11 +121,11 @@ struct PlasticCache{TN,TR} <: AbstractMaterialCache
 end
 
 function get_newton_cache(m::Plastic, residual_cache)
-    T = MMB.get_params_eltype(m)
+    T = MMB.get_vector_eltype(m)
     s = initial_material_state(m)
     ϵ = zero(SymmetricTensor{2,3})
     x = initial_guess(m, s, ϵ)
-    xv = Vector{T}(undef, get_num_unknowns(x))
+    xv = Vector{T}(undef, get_vector_length(x))
     rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, ϵ, zero(T), residual_cache), r_vector, x_vector, x)
     return NewtonCache(xv)
 end
@@ -208,20 +208,20 @@ function calculate_elastic_strain(old::PlasticState, ϵ, ν, Δλ)
 end
 
 # Functions for conversion between material and parameter vectors
-function MMB.get_num_params(m::Plastic)
+function MMB.get_vector_length(m::Plastic)
     return sum((
-        get_num_params(m.elastic),
-        get_num_params(m.yield),
-        sum(get_num_params, m.isotropic),
-        sum(get_num_params, m.kinematic),
-        get_num_params(m.overstress)))
+        get_vector_length(m.elastic),
+        get_vector_length(m.yield),
+        sum(get_vector_length, m.isotropic),
+        sum(get_vector_length, m.kinematic),
+        get_vector_length(m.overstress)))
 end
 
 function fromvectortuple(v::AbstractVector, materialtuple; offset=0)
     n = Ref(0)
     mout = map(materialtuple) do mt
         m = fromvector(v, mt; offset=(offset+n[]))
-        n[] += get_num_params(mt)
+        n[] += get_vector_length(mt)
         m
     end
     return mout, n[]
@@ -229,15 +229,15 @@ end
 
 function MMB.fromvector(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    elastic = fromvector(v, m.elastic, offset=i); i += get_num_params(m.elastic)
-    yield = fromvector(v, m.yield, offset=i); i += get_num_params(m.yield)
+    elastic = fromvector(v, m.elastic, offset=i); i += get_vector_length(m.elastic)
+    yield = fromvector(v, m.yield, offset=i); i += get_vector_length(m.yield)
     
     isotropic, nisoparam = fromvectortuple(v, m.isotropic, offset=i)
     i += nisoparam
     kinematic, nkinparam = fromvectortuple(v, m.kinematic, offset=i)
     i += nkinparam
 
-    overstress = fromvector(v, m.overstress, offset=i); # i += get_num_params(m.overstress)
+    overstress = fromvector(v, m.overstress, offset=i); # i += get_vector_length(m.overstress)
     # The following constructor call doesn't seem to be type stable when used in e.g. differentiate_material. 
     # Should be checked for (a) v and m same eltype and (b) v Dual and m Float64 eltypes.
     #return Plastic(;elastic, yield, isotropic, kinematic, overstress)
@@ -246,15 +246,15 @@ end
 
 function MMB.tovector!(v::AbstractVector, m::Plastic; offset=0)
     i = offset
-    tovector!(v, m.elastic; offset=i); i += get_num_params(m.elastic)
-    tovector!(v, m.yield; offset=i); i += get_num_params(m.yield)
+    tovector!(v, m.elastic; offset=i); i += get_vector_length(m.elastic)
+    tovector!(v, m.yield; offset=i); i += get_vector_length(m.yield)
     for iso in m.isotropic
-        tovector!(v, iso;offset=i); i+= get_num_params(iso)
+        tovector!(v, iso;offset=i); i+= get_vector_length(iso)
     end
     for kin in m.kinematic
-        tovector!(v, kin; offset=i); i+= get_num_params(kin)
+        tovector!(v, kin; offset=i); i+= get_vector_length(kin)
     end
-    tovector!(v, m.overstress; offset=i); # i += get_num_params(m.overstress)
+    tovector!(v, m.overstress; offset=i); # i += get_vector_length(m.overstress)
     return v
 end
 
