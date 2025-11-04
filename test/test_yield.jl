@@ -19,7 +19,7 @@
         @test MechMat.yield_criterion(yc, σ_shear, k) ≈ (s - (sy+k))
 
         # Conversions
-        @test MMB.get_vector_length(yc) == 1
+        @test get_vector_length(yc) == 1
         MatTest.test_vectorconversion(Float64, yc)
         MatTest.test_vectorconversion(Float32, yc)
 
@@ -45,7 +45,7 @@
         @test MechMat.yield_criterion(yc, σ_shear, k) ≈ (s - (Y0+k))
 
         # Conversions
-        @test MMB.get_vector_length(yc) == 2
+        @test get_vector_length(yc) == 2
         MatTest.test_vectorconversion(Float64, yc)
         MatTest.test_vectorconversion(MatTest.DualT{Float32}, yc)
 
