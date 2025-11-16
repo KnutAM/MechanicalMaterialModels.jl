@@ -45,3 +45,4 @@ function MMB.material_response(m::AbstractHyperElastic, F::Tensor{2,3}, args...)
     return P, ∂P∂F, NoMaterialState()
 end
 
+MMB.get_tensorbase(::AbstractHyperElastic) = Tensor{2,3}
