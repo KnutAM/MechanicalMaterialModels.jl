@@ -8,5 +8,5 @@ Newton = "83aa5b51-0588-403c-85e4-434ec185aae7"
 Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 
 [sources]
-MaterialModelsBase = {rev = "main", url = "https://github.com/knutam/MaterialModelsBase.jl"}
-Newton = {rev = "main", url = "https://github.com/knutam/Newton.jl"}
+MaterialModelsBase = {url = "https://github.com/knutam/MaterialModelsBase.jl"}
+Newton = {url = "https://github.com/knutam/Newton.jl"}

@@ -15,10 +15,10 @@
     @test nisop == length(piso)
     # Test for the full material
     param = vcat(pel, σ_y0, piso, pkin)
-    @test m1 == MMB.fromvector(param, m1)
-    pvec = zeros(get_num_params(m1))
+    @test m1 == fromvector(param, m1)
+    pvec = zeros(get_vector_length(m1))
     @test length(pvec) == length(param)
-    MMB.tovector!(pvec, m1)
+    tovector!(pvec, m1)
     @test pvec == param
     
     # Run an example, not test of result, just checking that it runs

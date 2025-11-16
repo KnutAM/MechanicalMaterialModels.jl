@@ -50,14 +50,14 @@ function GeneralizedMaxwell(base::LinearElastic, chains::Maxwell...)
     return GeneralizedMaxwell(base, chains)
 end
 
-MMB.get_params_eltype(::GeneralizedMaxwell{<:Any, T}) where {T} = T
+MMB.get_vector_eltype(::GeneralizedMaxwell{<:Any, T}) where {T} = T
 
 struct GeneralizedMaxwellState{T, num} <: AbstractMaterialState
     ϵv::NTuple{num, SymmetricTensor{2,3,T,6}}
 end
 
 function MMB.initial_material_state(m::GeneralizedMaxwell{<:Any, <:Any, num}) where {num}
-    T = MMB.get_params_eltype(m)
+    T = MMB.get_vector_eltype(m)
     return GeneralizedMaxwellState(ntuple(_ -> zero(SymmetricTensor{2, 3, T}), num))
 end
 

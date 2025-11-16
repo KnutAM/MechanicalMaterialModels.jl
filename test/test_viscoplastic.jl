@@ -29,7 +29,7 @@
 
     # Conversions
     function check_conversions(m)
-        v = rand(get_num_params(m))
+        v = rand(get_vector_length(m))
         mr = fromvector(v, m)
         vc = tovector(mr)
         @test vc ≈ v 

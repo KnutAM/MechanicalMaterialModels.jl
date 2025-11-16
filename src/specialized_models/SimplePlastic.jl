@@ -1,11 +1,13 @@
-@kwdef struct SimplePlastic{T} <: AbstractMaterial
+@kwdef struct SimplePlastic{T, T_tol} <: AbstractMaterial
     G::T
     K::T 
     Y0::T 
     Hiso::T 
     κ∞::T 
     Hkin::T 
-    β∞::T 
+    β∞::T
+    maxiter::Int = 100
+    tolerance::T_tol = sqrt(eps(typeof(G)))
 end
 
 function SimplePlastic(mp::Plastic{Ela, Yld, Iso, Kin, Rat}) where {
@@ -20,7 +22,8 @@ function SimplePlastic(mp::Plastic{Ela, Yld, Iso, Kin, Rat}) where {
     return SimplePlastic(;
         G  = E/(2 * (1 + ν)), K = E / (3 * (1 - 2 * ν)), Y0 = mp.yield.Y0, 
         Hiso = only(mp.isotropic).Hiso, κ∞ = only(mp.isotropic).κ∞,
-        Hkin = only(mp.kinematic).Hkin, β∞ = only(mp.kinematic).β∞)
+        Hkin = only(mp.kinematic).Hkin, β∞ = only(mp.kinematic).β∞,
+        maxiter = mp.maxiter, tolerance = mp.tolerance)
 end
 
 struct SimplePlasticState{T} <: AbstractMaterialState
@@ -44,7 +47,7 @@ function MMB.material_response(m::SimplePlastic, ϵ::SymmetricTensor{2,3}, old::
         return σ_trial, E4, old 
     else
         rf(x) = residual(x, m, ϵ, old)
-        Δλ, ∂r∂x, converged = newtonsolve(rf, 0.0)
+        Δλ, ∂r∂x, converged = newtonsolve(rf, 0.0; maxiter = m.maxiter, tol = m.tolerance)
         #=
         # Using bisection
         Δλ1, ∂r∂x1, converged = newtonsolve(rf, 0.0)

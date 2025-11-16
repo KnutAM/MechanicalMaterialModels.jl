@@ -20,7 +20,7 @@ The parameters for this model are,
 See [Meyer (2020)](https://doi.org/10.1016/j.ijsolstr.2020.04.037) for a description of this model
 in a finite strain framework. 
 """
-@kwdef struct CrystalPlasticity{C, E, T, OS} <: AbstractMaterial
+@kwdef struct CrystalPlasticity{C, E, T, OS, T_tol} <: AbstractMaterial
     crystal::C          # E.g. BCC, FCC, etc.
     elastic::E          # Elastic definition
     yield::T            # Initial yield limit
@@ -33,6 +33,8 @@ in a finite strain framework.
     Hkin::T # Kinematic hardening modulus 
     β∞::T   # Kinematic saturation stress
     overstress::OS      # Overstress function
+    maxiter::Int = 100
+    tolerance::T_tol = sqrt(eps(typeof(q)))
 end
 
 struct CrystalPlasticityState{T, nslip} <: MMB.AbstractMaterialState
@@ -96,7 +98,7 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         Δγ0 = zero(typeof(τ_trial_red))
         ν_trial = sign.(τ_trial_red)
         rf(x) = residual(mat, x, old, ϵ, ν_trial, Δt)
-        Δγ, ∂r∂x, converged = newtonsolve(rf, Δγ0)
+        Δγ, ∂r∂x, converged = newtonsolve(rf, Δγ0; maxiter = mat.maxiter, tol = mat.tolerance)
         if converged
             σ = calculate_stress(mat, Δγ, old, ϵ, ν_trial)
             # R(Δγ(ϵ), ϵ) = 0 => ∂R/∂x ∂γ/∂ϵ = - ∂R/∂ϵ

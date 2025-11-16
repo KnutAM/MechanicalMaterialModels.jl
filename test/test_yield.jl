@@ -19,8 +19,9 @@
         @test MechMat.yield_criterion(yc, σ_shear, k) ≈ (s - (sy+k))
 
         # Conversions
-        @test MMB.get_num_params(yc) == 1
-        test_conversion(yc)
+        @test get_vector_length(yc) == 1
+        MatTest.test_vectorconversion(Float64, yc)
+        MatTest.test_vectorconversion(Float32, yc)
 
         # Show 
         @test contains(show_as_string(yc), "VonMises with")
@@ -44,8 +45,9 @@
         @test MechMat.yield_criterion(yc, σ_shear, k) ≈ (s - (Y0+k))
 
         # Conversions
-        @test MMB.get_num_params(yc) == 2
-        test_conversion(yc)
+        @test get_vector_length(yc) == 2
+        MatTest.test_vectorconversion(Float64, yc)
+        MatTest.test_vectorconversion(MatTest.DualT{Float32}, yc)
 
         # Show 
         @test contains(show_as_string(yc), "DruckerPrager with")

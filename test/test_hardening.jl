@@ -22,10 +22,17 @@
     @test !isapprox(af_h0, ow_h1)  # Should not be equal
     
     # Check constructors from vectors
-    @test af == MMB.fromvector([Hkin, β∞], af)
-    @test af == MMB.fromvector([1.0, Hkin, β∞], af, offset=1)
-    @test db == MMB.fromvector([Hkin, β∞, δ], db)
-    @test ow == MMB.fromvector([Hkin, β∞, m], ow)
+    @test af == fromvector([Hkin, β∞], af)
+    @test af == fromvector([1.0, Hkin, β∞], af, offset=1)
+    @test db == fromvector([Hkin, β∞, δ], db)
+    @test ow == fromvector([Hkin, β∞, m], ow)
+
+    # Test conversions
+    for T in (Float64, MatTest.DualT{Float32})
+        for hardlaw in (af, db, ow)
+            MatTest.test_vectorconversion(T, hardlaw)
+        end
+    end
 
     # Check show methods 
     @test contains(show_as_string(af), "ArmstrongFrederick with")
@@ -41,7 +48,7 @@ end
     voce = Voce(Hiso=Hiso, κ∞=κ∞)
 
     # Test conversion from vector
-    @test voce == MMB.fromvector(vv, voce)
+    @test voce == fromvector(vv, voce)
     
     # Calculate Voce response using analytical function
     vocelaw(param, λ) = param.κ∞*(one(λ) - exp(-param.Hiso*λ/param.κ∞))
@@ -56,7 +63,7 @@ end
     swiftlaw(param, λ) = param.K * (param.λ0 + λ)^param.n 
 
     # Test conversion from vector
-    @test swift == MMB.fromvector(sv, swift)
+    @test swift == fromvector(sv, swift)
 
     κ0 = swiftlaw(swift, 0.0)
     κ = swiftlaw(swift, λ)
@@ -64,6 +71,13 @@ end
     
     @test dκdλ ≈ MechMat.get_evolution(swift, κ)
     @test κ0 ≈ MechMat.get_initial_value(swift)
+
+        # Test conversions
+    for T in (Float64, MatTest.DualT{Float32})
+        for hardlaw in (voce, swift)
+            MatTest.test_vectorconversion(T, hardlaw)
+        end
+    end
 
     # Show
     @test contains(show_as_string(voce), "Voce with")
