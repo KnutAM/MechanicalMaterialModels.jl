@@ -47,8 +47,6 @@ end
 MMB.get_vector_eltype(m::FiniteStrainPlastic) = typeof(initial_yield_limit(m.yield))
 MMB.get_tensorbase(::FiniteStrainPlastic) = Tensor{2, 3}
 
-MMB.get_tensorbase(::FiniteStrainPlastic) = Tensor{2,3}
-
 # Definition of material state
 struct FiniteStrainPlasticState{NKin,NIso,TFp,Tκ<:NTuple{NIso},TFk<:NTuple{NKin}} <: AbstractMaterialState
     Fp::TFp
