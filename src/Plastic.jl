@@ -120,18 +120,17 @@ struct PlasticCache{TN,TR} <: AbstractMaterialCache
     resid::TR   # Cache used in residual function if needed, otherwise nothing
 end
 
-function get_newton_cache(m::Plastic, residual_cache)
+function get_newton_cache(m::Plastic)
     T = MMB.get_vector_eltype(m)
     s = initial_material_state(m)
     ϵ = zero(SymmetricTensor{2,3})
     x = initial_guess(m, s, ϵ)
     xv = Vector{T}(undef, get_vector_length(x))
-    rf!(r_vector, x_vector) = vector_residual!((x)->residual(x, m, old, ϵ, zero(T), residual_cache), r_vector, x_vector, x)
     return NewtonCache(xv)
 end
 
 function MMB.allocate_material_cache(m::Plastic)
-    return PlasticCache(get_newton_cache(m, nothing), nothing)
+    return PlasticCache(get_newton_cache(m), nothing)
 end
 
 function elastic_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::AbstractMaterialState, Δt=nothing)
