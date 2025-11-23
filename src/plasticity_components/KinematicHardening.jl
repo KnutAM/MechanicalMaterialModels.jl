@@ -1,5 +1,6 @@
 # Kinematic hardening
 abstract type AbstractKinematicHardening{T} end
+MMB.get_vector_eltype(::AbstractKinematicHardening{T}) where {T} = T
 
 """
     ArmstrongFrederick(; Hkin, β∞)
@@ -65,8 +66,8 @@ function get_evolution(param::OhnoWang{Tp}, ν::SecondOrderTensor, βᵢ::Second
 end
 
 ## Conversion from vector to material
-MMB.get_num_params(::ArmstrongFrederick) = 2
-MMB.get_num_params(::Union{Delobelle,OhnoWang}) = 3
+MMB.get_vector_length(::ArmstrongFrederick) = 2
+MMB.get_vector_length(::Union{Delobelle,OhnoWang}) = 3
 
 MMB.fromvector(v::AbstractVector, ::ArmstrongFrederick; offset=0) = ArmstrongFrederick(Hkin=v[offset+1], β∞=v[offset+2])
 MMB.fromvector(v::AbstractVector, ::Delobelle; offset=0) = Delobelle(Hkin=v[offset+1], β∞=v[offset+2], δ=v[offset+3])

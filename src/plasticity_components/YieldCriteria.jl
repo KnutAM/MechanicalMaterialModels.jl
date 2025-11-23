@@ -29,7 +29,8 @@ effective_stress(::VonMises, σred) = vonmises(σred)
 
 effective_stress_gradient(yc::VonMises, σred) = (3/2)*dev(σred)/effective_stress(yc, σred) # More efficient than using AD above
 
-MMB.get_num_params(::VonMises) = 1
+MMB.get_vector_length(::VonMises) = 1
+MMB.get_vector_eltype(::VonMises{T}) where {T} = T
 MMB.fromvector(v::AbstractVector, ::VonMises; offset=0) = VonMises(v[offset+1])
 function MMB.tovector!(v::Vector, yl::VonMises; offset=0)
     v[offset+1] = yl.Y0
@@ -60,7 +61,8 @@ function effective_stress(yc::DruckerPrager, σred::SymmetricTensor{2,3,T}) wher
     return sqrt(T(3)/2)*norm(dev(σred)) - yc.B*tr(σred)
 end
 
-MMB.get_num_params(::DruckerPrager) = 2
+MMB.get_vector_length(::DruckerPrager) = 2
+MMB.get_vector_eltype(::DruckerPrager{T}) where {T} = T
 MMB.fromvector(v::AbstractVector, ::DruckerPrager; offset=0) = DruckerPrager(v[offset+1], v[offset+2])
 function MMB.tovector!(v::Vector, yl::DruckerPrager; offset=0)
     v[offset+1] = yl.Y0

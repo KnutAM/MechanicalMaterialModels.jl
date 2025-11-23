@@ -55,7 +55,7 @@ struct LinearElastic{T, case, N} <: AbstractMaterial
     p::SVector{N,T}
 end
 
-MMB.get_params_eltype(::LinearElastic{T}) where T = T
+MMB.get_vector_eltype(::LinearElastic{T}) where T = T
 
 # General symmetry
 LinearElastic{:general}(C::SymmetricTensor) = LinearElastic(C)
@@ -94,7 +94,7 @@ end
 calculate_stress(m::LinearElastic, ϵ::SymmetricTensor) = m.C⊡ϵ
 
 # Functions for conversion between material and parameter vectors
-MMB.get_num_params(::LinearElastic{<:Any,<:Any,N}) where{N} = N
+MMB.get_vector_length(::LinearElastic{<:Any,<:Any,N}) where{N} = N
 
 function MMB.fromvector(v::AbstractVector, ::LinearElastic{<:Any, :isotropic}; offset=0)
     return LinearElastic{:isotropic}(;E=v[offset+1], ν=v[offset+2])
@@ -115,12 +115,10 @@ function MMB.differentiate_material!(deriv::MaterialDerivatives{T}, m::LinearEla
     tomandel!(deriv.dσdϵ, dσdϵ)
     p = tovector(m)
     σ_from_param(p_vector) = tomandel(calculate_stress(fromvector(p_vector, m), ϵ))
-    ForwardDiff.jacobian!(deriv.dσdp,σ_from_param,p)
+    ForwardDiff.jacobian!(deriv.dσdp, σ_from_param, p)
     
-    fill!(deriv.dσdⁿs,  zero(T))
-    fill!(deriv.dsdϵ,  zero(T))
-    fill!(deriv.dsdp,  zero(T))
-    fill!(deriv.dsdⁿs,  zero(T))
+    fill!(deriv.dsdϵ, zero(T))
+    fill!(deriv.dsdp, zero(T))
 end
 
 # Show methods

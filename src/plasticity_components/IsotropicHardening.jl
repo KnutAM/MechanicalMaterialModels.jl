@@ -1,5 +1,6 @@
 # Isotropic hardening
 abstract type AbstractIsotropicHardening{T} end
+MMB.get_vector_eltype(::AbstractIsotropicHardening{T}) where {T} = T
 # Default initial value for κ
 get_initial_value(::AbstractIsotropicHardening{T}) where {T} = zero(T) 
 
@@ -59,8 +60,8 @@ get_initial_value(param::Swift) = param.K*(param.λ0^param.n)
 
 
 ## Conversion from vector to material
-MMB.get_num_params(::Voce) = 2
-MMB.get_num_params(::Swift) = 3
+MMB.get_vector_length(::Voce) = 2
+MMB.get_vector_length(::Swift) = 3
 
 MMB.fromvector(v::AbstractVector, ::Voce; offset=0) = Voce(Hiso=v[offset+1], κ∞=v[offset+2])
 MMB.fromvector(v::AbstractVector, ::Swift; offset=0) = Swift(K=v[offset+1], λ0=v[offset+2], n=v[offset+3])

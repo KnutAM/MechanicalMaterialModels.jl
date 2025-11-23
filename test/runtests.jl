@@ -1,15 +1,4 @@
-using Tensors, ForwardDiff, FiniteDiff, LinearAlgebra
-
-using MechanicalMaterialModels
-import MechanicalMaterialModels as MechMat
-
-using MaterialModelsBase
-import MaterialModelsBase as MMB
-
-using Test
-
-# Include files used for testing
-include("utilities4testing.jl")
+include("setup_tests.jl")
 
 # Test of utility features
 include("test_crystals.jl")

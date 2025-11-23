@@ -8,8 +8,8 @@
     m2 = LinearElastic{:cubicsymmetry}(C1111=v2[1], C1122=v2[2], C1212=v2[3])
 
     # Test that construction via vector gives the same material
-    @test m1 == MMB.fromvector(v1, m1)
-    @test m2 == MMB.fromvector(v2, m2)
+    @test m1 == fromvector(v1, m1)
+    @test m2 == fromvector(v2, m2)
 
     # Test get stress function
     E = 210.e3; ν = 0.3
