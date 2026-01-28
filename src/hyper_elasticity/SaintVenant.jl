@@ -14,8 +14,8 @@ where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor.
 end
 
 function compute_potential(m::SaintVenant, C::SymmetricTensor)
-    println("Using SaintVenant model")
     E = 0.5 * (C - one(C))
     return 1/2 * E ⊡ m.elastic.C ⊡ E
 end
+
 MMB.get_vector_eltype(::SaintVenant{T}) where {T} = T
