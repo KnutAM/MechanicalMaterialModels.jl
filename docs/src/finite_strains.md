@@ -12,6 +12,10 @@ the `MaterialModelsBase.jl` interface.
 NeoHooke
 CompressibleNeoHooke
 ```
+### Saint-Venant Elasticity
+```@docs 
+SaintVenant
+```
 
 ## [Plasticity](@id finite_strain_plasticity)
 ```@docs

@@ -1,13 +1,12 @@
 
 """
-    SaintVenant(; G, K)
+    SaintVenant(; elastic)
 
-The-Saint Venant formulation with shear modulus `G` and bulk modulus `K` defined by the potential
+The Saint-Venant formulation defined by the potential
 ```math
-\\varPsi(\\boldsymbol{E}) = G\\boldsymbol{E}_{dev}:\\boldsymbol{E}_{dev} \\frac{K}{2} \\mathrm{tr}(\\boldsymbol{E})^2
+\\varPsi(\\boldsymbol{E}) = \\frac{1}{2}\\boldsymbol{E}:\\boldsymbol{C}:\\boldsymbol{E}
 ```
-where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor. 
-
+where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor and ``\\boldsymbol{C}`` is the elastic stiffness tensor.
 """
 @kwdef struct SaintVenant{E} <: AbstractHyperElastic
     elastic::E
