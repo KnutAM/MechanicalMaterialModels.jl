@@ -1,5 +1,5 @@
 @testset "HyperElastic" begin
-    models = (NeoHooke(;G=rand()), CompressibleNeoHooke(;G=rand(), K=rand()), SaintVenant(LinearElastic(E=rand(), ν=rand())))
+    models = (NeoHooke(;G=rand()), CompressibleNeoHooke(;G=rand(), K=rand()), SaintVenant(LinearElastic(E=rand(), ν=rand()/2)))
     F = rand(Tensor{2,3})
     for model in models
         state = initial_material_state(model)
