@@ -6,7 +6,8 @@ The Saint-Venant formulation defined by the potential
 ```math
 \\varPsi(\\boldsymbol{E}) = \\frac{1}{2}\\boldsymbol{E}:\\mathsf{\\boldsymbol{C}}:\\boldsymbol{E}
 ```
-where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor and ``\\boldsymbol{C}`` is the elastic stiffness tensor.
+where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor and ``\\mathsf{\\boldsymbol{C}}`` is the 
+elastic stiffness tensor defined in `elastic`.
 """
 struct SaintVenant{E} <: AbstractHyperElastic
     elastic::E
