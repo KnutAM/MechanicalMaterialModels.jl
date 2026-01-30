@@ -8,7 +8,7 @@ The Saint-Venant formulation defined by the potential
 ```
 where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor and ``\\boldsymbol{C}`` is the elastic stiffness tensor.
 """
-@kwdef struct SaintVenant{E} <: AbstractHyperElastic
+struct SaintVenant{E} <: AbstractHyperElastic
     elastic::E
 end
 
