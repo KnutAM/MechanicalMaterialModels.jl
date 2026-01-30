@@ -20,8 +20,8 @@ LinearElastic(::Val{:isotropic})
     LinearElastic{:general}(C::SymmetricTensor{4,3})
 
 Create a general `LinearElastic` material with the 4th order elastic stiffness tensor
-``\\boldsymbol{C}``, such that 
-``\\boldsymbol{\\sigma} = \\boldsymbol{C}:\\boldsymbol{\\epsilon}``. 
+``\\mathsf{\\boldsymbol{C}}``, such that 
+``\\boldsymbol{\\sigma} = \\mathsf{\\boldsymbol{C}}:\\boldsymbol{\\epsilon}``. 
 """
 LinearElastic(::Val{:general})
 
@@ -29,11 +29,11 @@ LinearElastic(::Val{:general})
     LinearElastic{:cubicsymmetry}(; C1111::T, C1122::T, C1212::T) where {T}
 
 Create a `LinearElastic` material where the stiffness tensor,
-``\\boldsymbol{C}``, possesses cubic symmetry along the coordinate axes.
-Using the 9-component Voigt notation, ``\\boldsymbol{C}`` can be expressed as
+``\\mathsf{\\boldsymbol{C}}``, possesses cubic symmetry along the coordinate axes.
+Using the 9-component Voigt notation, ``\\mathsf{\\boldsymbol{C}}`` can be expressed as
 
 ```math
-\\boldsymbol{C} = 
+\\mathsf{\\boldsymbol{C}} = 
 \\begin{bmatrix}
 C_{1111} & C_{1122} & C_{1122} & 0 & 0 & 0 & 0 & 0 & 0 \\\\
 C_{1122} & C_{1111} & C_{1122} & 0 & 0 & 0 & 0 & 0 & 0 \\\\

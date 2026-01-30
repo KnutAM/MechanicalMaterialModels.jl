@@ -6,15 +6,16 @@ Implementations of mechanical (stress-strain) material models following
 the `MaterialModelsBase.jl` interface. 
 
 
+### Saint-Venant Elasticity
+```@docs 
+SaintVenant
+```
+
 ## Hyperelasticity
 ### Neo-Hookean Materials
 ```@docs 
 NeoHooke
 CompressibleNeoHooke
-```
-### Saint-Venant Elasticity
-```@docs 
-SaintVenant
 ```
 
 ## [Plasticity](@id finite_strain_plasticity)
