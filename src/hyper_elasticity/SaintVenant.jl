@@ -1,6 +1,6 @@
 
 """
-    SaintVenant(; elastic)
+    SaintVenant(elastic::LinearElastic)
 
 The Saint-Venant formulation defined by the potential
 ```math
