@@ -17,4 +17,4 @@ function compute_potential(m::SaintVenant, C::SymmetricTensor)
     return 1/2 * E ⊡ m.elastic.C ⊡ E
 end
 
-MMB.get_vector_eltype(::SaintVenant{T}) where {T} = T
+MMB.get_vector_eltype(m::SaintVenant) = MMB.get_vector_eltype(m.elastic)
