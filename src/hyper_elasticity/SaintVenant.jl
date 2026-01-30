@@ -14,8 +14,8 @@ struct SaintVenant{E} <: AbstractHyperElastic
 end
 
 function compute_potential(m::SaintVenant, C::SymmetricTensor)
-    E = 0.5 * (C - one(C))
-    return 1/2 * E ⊡ m.elastic.C ⊡ E
+    E = (C - one(C)) / 2
+    return (E ⊡ m.elastic.C ⊡ E) / 2
 end
 
 MMB.get_vector_eltype(m::SaintVenant) = MMB.get_vector_eltype(m.elastic)
