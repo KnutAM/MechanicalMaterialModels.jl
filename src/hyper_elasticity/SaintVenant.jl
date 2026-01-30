@@ -4,7 +4,7 @@
 
 The Saint-Venant formulation defined by the potential
 ```math
-\\varPsi(\\boldsymbol{E}) = \\frac{1}{2}\\boldsymbol{E}:\\boldsymbol{C}:\\boldsymbol{E}
+\\varPsi(\\boldsymbol{E}) = \\frac{1}{2}\\boldsymbol{E}:\\mathsf{\\boldsymbol{C}}:\\boldsymbol{E}
 ```
 where ``\\boldsymbol{E}`` is the Green-Lagrange strain tensor and ``\\boldsymbol{C}`` is the elastic stiffness tensor.
 """
