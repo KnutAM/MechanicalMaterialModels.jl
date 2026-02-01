@@ -51,7 +51,8 @@ export CrystalPlasticity
 
 include("hyper_elasticity/HyperElastic.jl")
 include("hyper_elasticity/NeoHooke.jl")
-export NeoHooke, CompressibleNeoHooke
+include("hyper_elasticity/SaintVenant.jl")
+export NeoHooke, CompressibleNeoHooke, SaintVenant
 
 include("FiniteStrainPlastic.jl")
 export FiniteStrainPlastic
