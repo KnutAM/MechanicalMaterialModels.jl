@@ -122,7 +122,6 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
         if converged
             x_sol = fromvector(x_vector, x0)
             check_solution(x_sol)
-            update_extras!(extras, x_sol, ∂R∂X) # Use dRdx before calling inv!
             # dPdF = ∂P∂F + ∂P∂X dXdF
             # dRdF = 0 = ∂R∂F + ∂R∂X dXdF => dXdF = - ∂R∂X\∂R∂F
             
@@ -130,6 +129,8 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
             ∂R∂F = ForwardDiff.jacobian(F_R_fun, tomandel(SVector, F))
             
             dXdF = - ∂R∂X \ ∂R∂F
+
+            update_extras!(extras, x_sol, ∂R∂X, dXdF)
 
             P = calculate_PKstress(m, x_sol, old, F)
             P_X_fun = Tensor2VectorFun(x_sol, x -> calculate_PKstress(m, x, old, F))
