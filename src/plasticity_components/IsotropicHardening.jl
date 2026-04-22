@@ -10,7 +10,7 @@ get_initial_value(::AbstractIsotropicHardening{T}) where {T} = zero(T)
 Exponentially saturating isotropic hardening
 
 ```math
-\\kappa_i = g_{\\mathrm{iso},i}(\\lambda) = \\kappa_\\infty \\left[1 - \\mathrm{exp}\\left(\\frac{H_\\mathrm{iso}}{\\kappa_\\infty} \\lambda \\right)\\right]
+\\kappa_i = g_{\\mathrm{iso},i}(\\lambda) = \\kappa_\\infty \\left[1 - \\mathrm{exp}\\left(-\\frac{H_\\mathrm{iso}}{\\kappa_\\infty} \\lambda \\right)\\right]
 ```
 or alternatively as differential equations
 ```math
