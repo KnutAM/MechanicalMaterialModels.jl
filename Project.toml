@@ -14,7 +14,7 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 [compat]
 julia = "1.11"
 Tensors = "1.16.1"
-MaterialModelsBase = "0.3"
+MaterialModelsBase = "0.3, 0.4"
 Newton = "0.2"
 
 [extras]
