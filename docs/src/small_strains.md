@@ -86,3 +86,8 @@ BCC12
 GenericCrystallography
 CrystalPlasticity
 ```
+
+## [Postprocessing](@id small_strain_postprocessing)
+```@docs
+calculate_current_stress
+```
