@@ -105,4 +105,52 @@
         σ_local_el = calculate_current_stress(m_el, rotate(ϵ, r, -θ), initial_material_state(m_el))
         @test σ_rm_el ≈ rotate(σ_local_el, r, θ)
     end
+
+    @testset "HyperElastic" begin
+        models = (NeoHooke(G=1 + rand()), CompressibleNeoHooke(G=1 + rand(), K=10 + rand()), SaintVenant(LinearElastic(E=210.e3, ν=0.3)))
+        for m in models
+            state = initial_material_state(m)
+            F = one(Tensor{2,3}) + rand(Tensor{2,3}) / 20
+            P, _, _ = material_response(m, F, state)
+            @test calculate_current_stress(m, F, state) ≈ P
+
+            # Reduced stress state: this already works via the generic
+            # `NoMaterialState` fallback, since MaterialModelsBase's stress-state
+            # iteration machinery already supports finite-strain (Tensor{2,3})
+            # reduced states generically.
+            rss = ReducedStressState(PlaneStress(), m)
+            F_red = one(Tensor{2,2}) + rand(Tensor{2,2}) / 20
+            state_red = initial_material_state(rss)
+            P_red, _, _, _ = material_response(rss, F_red, state_red)
+            @test calculate_current_stress(rss, F_red, state_red) ≈ P_red
+        end
+    end
+
+    @testset "FiniteStrainPlastic" begin
+        E, ν, Y0 = 210.e3, 0.3, 100.0
+        nh = CompressibleNeoHooke(G=convert_hooke_param(:G; E, ν), K=convert_hooke_param(:K; E, ν))
+        m = FiniteStrainPlastic(elastic=nh, yield=Y0, isotropic=Voce(Hiso=10.e3, κ∞=200.0), kinematic=ArmstrongFrederick(Hkin=1.e4, β∞=150.0))
+
+        # Load to a converged, plastically loaded state
+        state0 = initial_material_state(m)
+        F1 = Tensor{2,3}((i, j) -> i == j ? (i == 1 ? 1.02 : 1.0) : 0.0)
+        P1, _, state1 = material_response(m, F1, state0, nothing)
+        @test calculate_current_stress(m, F1, state1) ≈ P1
+        @test state1.Fp != state0.Fp # sanity: this test only matters if plastic loading occurred
+
+        # Frozen-state postprocessing: a different F should give the frozen-Fp
+        # elastic response, NOT a fresh plastic correction.
+        F2 = Tensor{2,3}((i, j) -> i == j ? (i == 1 ? 1.03 : 1.0) : 0.0)
+        σ2_frozen = calculate_current_stress(m, F2, state1)
+        σ2_true, _, state2_true = material_response(m, F2, state1, nothing)
+        @test !(σ2_true ≈ σ2_frozen) # material_response would further evolve plastically
+        @test state2_true.Fp != state1.Fp
+
+        # Reduced stress state, via the FrozenStressMaterial + MMB stress-state iteration
+        rss = ReducedStressState(PlaneStress(), m)
+        F1_red = Tensor{2,2}((1.02, 0.0, 0.0, 1.0))
+        state0_red = initial_material_state(rss)
+        P1_red, _, state1_red, _ = material_response(rss, F1_red, state0_red, nothing)
+        @test calculate_current_stress(rss, F1_red, state1_red) ≈ P1_red
+    end
 end

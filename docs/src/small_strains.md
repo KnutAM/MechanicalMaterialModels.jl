@@ -88,6 +88,8 @@ CrystalPlasticity
 ```
 
 ## [Postprocessing](@id small_strain_postprocessing)
+While `calculate_current_stress` itself is not specific to small strains, it
+is documented here (see also [Finite Strains](@ref finite_strain_postprocessing)).
 ```@docs
 calculate_current_stress
 ```

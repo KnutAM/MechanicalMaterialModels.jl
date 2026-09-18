@@ -101,3 +101,10 @@ Otherwise, the overstress function, ``\eta(\varPhi)``, determines the evolution 
 ```math
 \dot{\lambda} = \eta(\varPhi, Y_0 + \kappa)
 ```
+
+## [Postprocessing](@id finite_strain_postprocessing)
+[`calculate_current_stress`](@ref) (documented under [Postprocessing](@ref small_strain_postprocessing))
+also supports the finite-strain models on this page: [`NeoHooke`](@ref),
+[`CompressibleNeoHooke`](@ref), [`SaintVenant`](@ref), and
+[`FiniteStrainPlastic`](@ref) (including reduced-dimensional stress states
+for the latter).
