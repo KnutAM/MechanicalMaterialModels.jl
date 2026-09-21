@@ -76,6 +76,15 @@
         @test σ2_frozen ≈ σ2_expected
         σ2_true, _, _ = material_response(m, ϵ2, state1, 0.5)
         @test !(σ2_true ≈ σ2_frozen)
+
+        # Reduced stress state: previously unsupported, now works automatically
+        # via the generic fallback (GeneralizedMaxwell has no dedicated reduced
+        # method, only the full-dimensional one used above).
+        rss = ReducedStressState(PlaneStress(), m)
+        ϵ1_red = SymmetricTensor{2,2}((0.01, 0.0, 0.0))
+        state0_red = initial_material_state(rss)
+        σ1_red, _, state1_red, _ = material_response(rss, ϵ1_red, state0_red, 0.5)
+        @test calculate_current_stress(rss, ϵ1_red, state1_red) ≈ σ1_red
     end
 
     @testset "RotatedMaterial" begin
@@ -104,6 +113,14 @@
         σ_rm_el = calculate_current_stress(rm_el, ϵ, initial_material_state(rm_el))
         σ_local_el = calculate_current_stress(m_el, rotate(ϵ, r, -θ), initial_material_state(m_el))
         @test σ_rm_el ≈ rotate(σ_local_el, r, θ)
+
+        # Reduced stress state wrapping a rotated, stateful material: previously
+        # unsupported, now works automatically via the generic fallback.
+        rss = ReducedStressState(PlaneStress(), rm)
+        ϵ1_red = SymmetricTensor{2,2}((0.01, 0.0, 0.0))
+        state0_red = initial_material_state(rss)
+        σ1_red, _, state1_red, _ = material_response(rss, ϵ1_red, state0_red, nothing)
+        @test calculate_current_stress(rss, ϵ1_red, state1_red) ≈ σ1_red
     end
 
     @testset "HyperElastic" begin

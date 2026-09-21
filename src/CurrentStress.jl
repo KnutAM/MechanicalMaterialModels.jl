@@ -17,35 +17,43 @@ reduced-dimensional strain is supplied. This replaces the ad hoc, per-material
 `calculate_stress` dispatch previously used for postprocessing in
 [FerriteAssembly.jl#94](https://github.com/KnutAM/FerriteAssembly.jl/pull/94).
 
+A material-model developer only needs to implement the full-dimensional method,
+`calculate_current_stress(m::MyMaterial, ϵ, state::MyMaterialState)`. Support for
+a reduced-dimensional stress state (via `ReducedStressState`) then follows
+automatically from a generic fallback, which rides `MaterialModelsBase`'s
+existing stress-state Newton iteration (e.g. `PlaneStress`) using an internal
+`FrozenStressMaterial` wrapper, with the tangent obtained by automatic
+differentiation. A specific reduced-dimensional method only needs to be added
+when a cheaper, non-autodiff alternative exists (as done here for
+`Plastic` and for stateless/`NoMaterialState` materials).
+
 Currently supported materials: [`LinearElastic`](@ref), [`NeoHooke`](@ref),
-[`CompressibleNeoHooke`](@ref), and [`SaintVenant`](@ref) (all via the generic
-`NoMaterialState` fallback), [`Plastic`](@ref), [`FiniteStrainPlastic`](@ref),
-[`GeneralizedMaxwell`](@ref), and [`RotatedMaterial`](@ref) wrapping any of
-the small-strain materials above. Reduced-dimensional support (via
-`ReducedStressState`) is currently implemented for `LinearElastic`,
-`NeoHooke`, `CompressibleNeoHooke`, `SaintVenant`, `Plastic`, and
-`FiniteStrainPlastic`.
+[`CompressibleNeoHooke`](@ref), and [`SaintVenant`](@ref) (each with a
+dedicated, gradient-free implementation), [`Plastic`](@ref),
+[`FiniteStrainPlastic`](@ref), [`GeneralizedMaxwell`](@ref), and
+[`RotatedMaterial`](@ref) wrapping any of these. Reduced-dimensional support
+(via `ReducedStressState`) works for all of the above, generically for
+`GeneralizedMaxwell` and for `RotatedMaterial` wrapping a small-strain
+material (via the generic fallback), and with a dedicated
+non-autodiff implementation for stateless materials and for `Plastic`.
 
 !!! note "Not (yet) supported"
     `CrystalPlasticity` (small-strain, despite referencing a finite-strain
-    framework in its docstring), `GeneralizedMaxwell`/`RotatedMaterial` under
-    `ReducedStressState`, and `RotatedMaterial` wrapping a finite-strain
-    material (the latter already errors in `RotatedMaterial`'s own
-    `material_response`, independently of this function).
+    framework in its docstring) has no `calculate_current_stress` method at
+    all yet. `RotatedMaterial` wrapping a finite-strain material already
+    errors in `RotatedMaterial`'s own `material_response` (a hard
+    `::SymmetricTensor{2,3}` type assertion), independently of this function.
 """
 function calculate_current_stress end
 
-# Generic fallback for genuinely stateless materials: since there is no history
-# to accidentally advance, delegating to `material_response` is safe and exact.
-function calculate_current_stress(m::AbstractMaterial, ϵ, state::MMB.NoMaterialState)
-    σ, _, _ = MMB.material_response(m, ϵ, state)
-    return σ
-end
+# LinearElastic.jl: stress-only, no gradient (material_response would compute one,
+# via `m.C`, that `calculate_current_stress` doesn't need).
+calculate_current_stress(m::LinearElastic, ϵ::SymmetricTensor{2,3}, ::MMB.NoMaterialState) = calculate_stress(m, ϵ)
 
-function calculate_current_stress(stress_state::MMB.AbstractStressState, m::AbstractMaterial, ϵ, state::MMB.NoMaterialState)
-    σ, _, _, _ = MMB.material_response(stress_state, m, ϵ, state)
-    return σ
-end
+# HyperElastic.jl: stress-only. Computing `S = 2 ∂Ψ/∂C` (once) is unavoidable to get
+# the stress at all, but `material_response` additionally differentiates through
+# that once more to get the tangent, which `calculate_current_stress` doesn't need.
+calculate_current_stress(m::AbstractHyperElastic, F::Tensor{2,3}, ::MMB.NoMaterialState) = F ⋅ compute_stress(m, tdot(F))
 
 # Plastic.jl
 function calculate_current_stress(m::Plastic, ϵ::SymmetricTensor{2,3}, state::PlasticState)
@@ -57,6 +65,8 @@ function calculate_current_stress(stress_state::MMB.AbstractStressState, m::Plas
     # strain: for non-iterative states (e.g. PlaneStrain) the zero-padded
     # out-of-plane *total* strain is exact by definition of the state, whereas
     # reducing `state.ϵp` first would incorrectly discard its out-of-plane part.
+    # This avoids autodiff entirely, by delegating to `m.elastic`'s own analytic
+    # stress-state response.
     ϵ_3d = MMB.expand_tensordim(stress_state, ϵ)
     ϵₑ = ϵ_3d - state.ϵp
     σ, _, _, _ = MMB.material_response(stress_state, m.elastic, ϵₑ, MMB.initial_material_state(m.elastic))
@@ -75,43 +85,48 @@ end
 # internally for the elastic-predictor branch of `material_response`.
 calculate_current_stress(m::FiniteStrainPlastic, F::Tensor{2,3}, state::FiniteStrainPlasticState) = calculate_PKstress(m, state, F)
 
-# Wraps a frozen-state stress formula (strain -> stress, at fixed history
+# Wraps a frozen-state stress formula, `f`, mapping a strain (`SecondOrderTensor{3}`,
+# i.e. `Tensor{2,3}` or `SymmetricTensor{2,3}`) to a stress (at fixed history/internal
 # variables) as an `AbstractMaterial`, so that it can ride MaterialModelsBase's
-# existing stress-state Newton iteration (e.g. for `PlaneStress`). The tangent
-# needed for that iteration is obtained via automatic differentiation, exactly
-# analogous to how `compute_stress_and_tangent` differentiates through
-# `compute_stress` in `HyperElastic.jl`.
+# existing stress-state Newton iteration (e.g. for `PlaneStress`). The tangent needed
+# for that iteration is obtained via automatic differentiation. This is what powers
+# the generic reduced-dimensional fallback of `calculate_current_stress` below.
 struct FrozenStressMaterial{F} <: AbstractMaterial
-    f::F  # F::Tensor{2,3} -> P::Tensor{2,3}
+    f::F
 end
-function MMB.material_response(fm::FrozenStressMaterial, F::Tensor{2,3}, old::MMB.AbstractMaterialState, args...)
-    dPdF, P = Tensors.gradient(fm.f, F, :all)
-    return P, dPdF, old
+function MMB.material_response(fm::FrozenStressMaterial, strain::SecondOrderTensor{3}, old::MMB.AbstractMaterialState, args::Vararg{Any,N}) where {N}
+    dσdϵ, σ = Tensors.gradient(fm.f, strain, :all)
+    return σ, dσdϵ, old
 end
 
-function calculate_current_stress(stress_state::MMB.AbstractStressState, m::FiniteStrainPlastic, F, state::FiniteStrainPlasticState)
-    frozen = FrozenStressMaterial(F_ -> calculate_PKstress(m, state, F_))
-    σ, _, _, _ = MMB.material_response(stress_state, frozen, F, MMB.NoMaterialState{eltype(F)}())
+# Generic reduced-dimensional fallback: as long as `calculate_current_stress(m, ϵ,
+# state)` (full-dimensional) is implemented for `m`, this makes `ReducedStressState`
+# support "just work", by autodiff-ing through it. More specific methods above/below
+# (e.g. for `Plastic` or `NoMaterialState`) take precedence when a cheaper,
+# non-autodiff alternative exists.
+function calculate_current_stress(stress_state::MMB.AbstractStressState, m::AbstractMaterial, strain, state::MMB.AbstractMaterialState)
+    frozen = FrozenStressMaterial(e -> calculate_current_stress(m, e, state))
+    σ, _, _, _ = MMB.material_response(stress_state, frozen, strain, MMB.NoMaterialState{eltype(strain)}())
+    return σ
+end
+
+# Reduced-dimensional fast path for stateless materials: avoids the autodiff in the
+# generic fallback above by delegating directly to `material_response`'s own
+# (analytic, for `LinearElastic`) stress-state handling.
+function calculate_current_stress(stress_state::MMB.AbstractStressState, m::AbstractMaterial, strain, state::MMB.NoMaterialState)
+    σ, _, _, _ = MMB.material_response(stress_state, m, strain, state)
     return σ
 end
 
 # RotatedMaterial.jl
-function _calculate_current_stress_rotated(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state)
+function calculate_current_stress(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state)
     θ = norm(rm.rotation)
     ϵ_rot = rotate(ϵ, rm.rotation, -θ)
     σ_rot = calculate_current_stress(rm.material, ϵ_rot, state)
     return rotate(σ_rot, rm.rotation, θ)
 end
-calculate_current_stress(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state) = _calculate_current_stress_rotated(rm, ϵ, state)
-# Disambiguates against the `(AbstractMaterial, ϵ, ::NoMaterialState)` fallback above,
-# which would otherwise be equally specific when `rm.material` is stateless.
-calculate_current_stress(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state::MMB.NoMaterialState) = _calculate_current_stress_rotated(rm, ϵ, state)
 
 # ReducedStressState (MaterialModelsBase.jl)
-function _calculate_current_stress_reduced(rss::MMB.ReducedStressState, ϵ, state)
+function calculate_current_stress(rss::MMB.ReducedStressState, ϵ, state)
     return calculate_current_stress(rss.stress_state, rss.material, ϵ, state)
 end
-calculate_current_stress(rss::MMB.ReducedStressState, ϵ, state) = _calculate_current_stress_reduced(rss, ϵ, state)
-# Disambiguates against the `(AbstractMaterial, ϵ, ::NoMaterialState)` fallback above,
-# which would otherwise be equally specific when `rss.material` is stateless.
-calculate_current_stress(rss::MMB.ReducedStressState, ϵ, state::MMB.NoMaterialState) = _calculate_current_stress_reduced(rss, ϵ, state)
