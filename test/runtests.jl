@@ -17,7 +17,7 @@ include("test_viscoplastic.jl")
 include("test_viscoelastic.jl")
 include("test_differentiate.jl")
 include("test_crystal_plasticity.jl")
-include("test_current_stress.jl")
+include("test_stress_from_state.jl")
 
 # Test finite strain behaviors
 include("test_hyperelastic.jl")

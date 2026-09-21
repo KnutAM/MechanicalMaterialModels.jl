@@ -27,6 +27,10 @@ MaterialModelsTesting = "882b014b-b96c-4115-8629-e17fb35110d2"
 test = ["Test", "ForwardDiff", "FiniteDiff", "MaterialModelsTesting"]
 
 [sources]
-MaterialModelsBase = {url = "https://github.com/knutam/MaterialModelsBase.jl"}
+# TEMPORARY: pins to the branch implementing `stress_from_state`
+# (https://github.com/KnutAM/MaterialModelsBase.jl/pull/21). Revert to
+# `{url = "https://github.com/knutam/MaterialModelsBase.jl"}` once that PR
+# merges and is released (and tighten the `[compat]` bound above accordingly).
+MaterialModelsBase = {url = "https://github.com/knutambot/MaterialModelsBase.jl", rev = "cb/calculate_current_stress"}
 Newton = {url = "https://github.com/knutam/Newton.jl"}
 MaterialModelsTesting = {url = "https://github.com/KnutAM/MaterialModelsTesting.jl"}

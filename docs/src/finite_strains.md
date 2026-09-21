@@ -103,8 +103,7 @@ Otherwise, the overstress function, ``\eta(\varPhi)``, determines the evolution 
 ```
 
 ## [Postprocessing](@id finite_strain_postprocessing)
-[`calculate_current_stress`](@ref) (documented under [Postprocessing](@ref small_strain_postprocessing))
-also supports the finite-strain models on this page: [`NeoHooke`](@ref),
-[`CompressibleNeoHooke`](@ref), [`SaintVenant`](@ref), and
-[`FiniteStrainPlastic`](@ref) (including reduced-dimensional stress states
-for the latter).
+`MaterialModelsBase.stress_from_state` (see [Postprocessing](@ref small_strain_postprocessing))
+also has methods here for [`NeoHooke`](@ref), [`CompressibleNeoHooke`](@ref),
+[`SaintVenant`](@ref), and [`FiniteStrainPlastic`](@ref) (including
+lower-dimensional stress states for the latter).

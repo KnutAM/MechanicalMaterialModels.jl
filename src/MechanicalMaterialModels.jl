@@ -57,7 +57,6 @@ export NeoHooke, CompressibleNeoHooke, SaintVenant
 include("FiniteStrainPlastic.jl")
 export FiniteStrainPlastic
 
-include("CurrentStress.jl")
-export calculate_current_stress
+include("StressFromState.jl")
 
 end
