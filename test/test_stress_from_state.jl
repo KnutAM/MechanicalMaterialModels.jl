@@ -47,8 +47,10 @@
         σ1_red_current = stress_from_state(rss, ϵ1_red, state1_red)
         @test σ1_red_current ≈ σ1_red
 
-        # PlaneStrain: verify that the non-iterative shortcut retains the transverse
-        # plastic strain's elastic coupling (regression check for issue found in review)
+        # PlaneStrain: verify the transverse plastic strain's elastic coupling is
+        # retained (regression check for an issue found in review of an earlier,
+        # since-removed Plastic-specific reduced-dimensional method; kept to
+        # confirm the generic fallback gets this right too).
         rss_strain = ReducedStressState(PlaneStrain(), m)
         state0_strain = initial_material_state(rss_strain)
         σ1_strain, _, state1_strain, _ = material_response(rss_strain, ϵ1_red, state0_strain, nothing)

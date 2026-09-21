@@ -27,21 +27,12 @@ MMB.stress_from_state(m::LinearElastic, ϵ::SymmetricTensor{2,3}, ::MMB.NoMateri
 MMB.stress_from_state(m::AbstractHyperElastic, F::Tensor{2,3}, ::MMB.NoMaterialState) = F ⋅ compute_stress(m, tdot(F))
 
 # Plastic.jl
+# Reduced-dimensional stress states (e.g. PlaneStress) need no dedicated method
+# here: MaterialModelsBase's generic fallback autodiffs through this full-dim
+# method and gives the same result (this formula is linear in ϵ, so the
+# autodiff-derived tangent is exact, same as the elastic stiffness itself).
 function MMB.stress_from_state(m::Plastic, ϵ::SymmetricTensor{2,3}, state::PlasticState)
     return calculate_stress(m.elastic, ϵ - state.ϵp)
-end
-
-function MMB.stress_from_state(stress_state::MMB.AbstractStressState, m::Plastic, ϵ, state::PlasticState)
-    # Expand the (possibly reduced) total strain to 3d before removing the plastic
-    # strain: for non-iterative states (e.g. PlaneStrain) the zero-padded
-    # out-of-plane *total* strain is exact by definition of the state, whereas
-    # reducing `state.ϵp` first would incorrectly discard its out-of-plane part.
-    # This avoids autodiff entirely, by delegating to `m.elastic`'s own analytic
-    # stress-state response.
-    ϵ_3d = MMB.expand_tensordim(stress_state, ϵ)
-    ϵₑ = ϵ_3d - state.ϵp
-    σ, _, _, _ = MMB.material_response(stress_state, m.elastic, ϵₑ, MMB.initial_material_state(m.elastic))
-    return σ
 end
 
 # ViscoElastic.jl
