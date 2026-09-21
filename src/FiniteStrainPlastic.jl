@@ -196,6 +196,13 @@ function calculate_PKstress(m::FiniteStrainPlastic, Fp::Tensor, F::Tensor)
     return P
 end
 
+# `calculate_PKstress(m, state, F)` already computes the frozen-state (converged
+# `state.Fp`, no Newton re-solve) 1st Piola-Kirchhoff stress; it is used above
+# for the elastic-predictor branch of `material_response`. No
+# reduced-dimensional method is needed: MaterialModelsBase's generic fallback
+# (autodiff-ing through this method via its own `FrozenStressMaterial`) covers it.
+MMB.stress_from_state(m::FiniteStrainPlastic, F::Tensor{2,3}, state::FiniteStrainPlasticState) = calculate_PKstress(m, state, F)
+
 check_solution(x::FiniteStrainPlasticResidual) = x.Δλ < 0 ? throw(MMB.NoLocalConvergence("Plastic: Invalid solution, x.Δλ = ", x.Δλ, " < 0")) : nothing
 
 # TODO: Could be replaced by exponential map. 

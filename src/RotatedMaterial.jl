@@ -33,3 +33,15 @@ function MMB.material_response(rm::RotatedMaterial, strain::AbstractTensor, args
     stiff = rotate(stiff_rot, rm.rotation, θ)
     return stress, stiff, state
 end
+
+function _stress_from_state_rotated(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state)
+    θ = norm(rm.rotation)
+    ϵ_rot = rotate(ϵ, rm.rotation, -θ)
+    σ_rot = MMB.stress_from_state(rm.material, ϵ_rot, state)
+    return rotate(σ_rot, rm.rotation, θ)
+end
+MMB.stress_from_state(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state) = _stress_from_state_rotated(rm, ϵ, state)
+# Disambiguates against MaterialModelsBase's own `(AbstractMaterial, ϵ,
+# ::NoMaterialState)` fallback, which would otherwise be equally specific when
+# `rm.material` is stateless.
+MMB.stress_from_state(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state::MMB.NoMaterialState) = _stress_from_state_rotated(rm, ϵ, state)

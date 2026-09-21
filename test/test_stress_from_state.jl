@@ -155,7 +155,7 @@
         F1 = Tensor{2,3}((i, j) -> i == j ? (i == 1 ? 1.02 : 1.0) : 0.0)
         P1, _, state1 = material_response(m, F1, state0, nothing)
         @test stress_from_state(m, F1, state1) ≈ P1
-        @test state1.Fp != state0.Fp # sanity: this test only matters if plastic loading occurred
+        @assert state1.Fp ≉ state0.Fp # sanity: this test only matters if plastic loading occurred
 
         # Frozen-state postprocessing: a different F should give the frozen-Fp
         # elastic response, NOT a fresh plastic correction.
@@ -163,7 +163,7 @@
         σ2_frozen = stress_from_state(m, F2, state1)
         σ2_true, _, state2_true = material_response(m, F2, state1, nothing)
         @test !(σ2_true ≈ σ2_frozen) # material_response would further evolve plastically
-        @test state2_true.Fp != state1.Fp
+        @assert state2_true.Fp ≉ state1.Fp
 
         # Reduced stress state, via the FrozenStressMaterial + MMB stress-state iteration
         rss = ReducedStressState(PlaneStress(), m)

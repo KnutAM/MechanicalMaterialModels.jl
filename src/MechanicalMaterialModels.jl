@@ -57,6 +57,4 @@ export NeoHooke, CompressibleNeoHooke, SaintVenant
 include("FiniteStrainPlastic.jl")
 export FiniteStrainPlastic
 
-include("StressFromState.jl")
-
 end

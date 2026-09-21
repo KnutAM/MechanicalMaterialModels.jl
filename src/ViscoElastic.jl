@@ -71,3 +71,8 @@ function MMB.material_response(m::GeneralizedMaxwell, ϵ::SymmetricTensor{2,3}, 
     state = GeneralizedMaxwellState(map((c, ϵv_old) -> calculate_viscous_strain(c, ϵ, ϵv_old, Δt), m.chains, old.ϵv))
     return σ, dσdϵ, state
 end
+
+function MMB.stress_from_state(m::GeneralizedMaxwell, ϵ::SymmetricTensor{2,3}, state::GeneralizedMaxwellState)
+    σ0 = calculate_stress(m.base, ϵ)
+    return mapreduce((c, ϵv) -> 2 * c.G * (dev(ϵ) - ϵv), +, m.chains, state.ϵv; init=σ0)
+end
