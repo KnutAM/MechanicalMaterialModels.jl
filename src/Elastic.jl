@@ -93,9 +93,6 @@ end
 
 calculate_stress(m::LinearElastic, ϵ::SymmetricTensor) = m.C⊡ϵ
 
-# Stress-only, no gradient (material_response would compute one, via `m.C`,
-# that `stress_from_state`'s generic `NoMaterialState` fallback would
-# otherwise compute via `material_response` and discard).
 MMB.stress_from_state(m::LinearElastic, ϵ::SymmetricTensor{2,3}, ::MMB.NoMaterialState) = calculate_stress(m, ϵ)
 
 # Functions for conversion between material and parameter vectors

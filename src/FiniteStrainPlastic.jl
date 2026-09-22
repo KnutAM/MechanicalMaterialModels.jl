@@ -112,7 +112,7 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
 
     if Φ_trial < 0
         update_extras!(extras)
-        dPdF, P = gradient(F_->calculate_PKstress(m, old, F_), F, :all)
+        dPdF, P = gradient(F_->MMB.stress_from_state(m, F_, old), F, :all)
         return P, dPdF, old
     else
         x0 = initial_guess(m, old, M)
@@ -179,9 +179,8 @@ function get_plastic_state(x::FiniteStrainPlasticResidual, m::FiniteStrainPlasti
     return new, M
 end
 
-function calculate_PKstress(m::FiniteStrainPlastic, state::FiniteStrainPlasticState, F::Tensor)
-    return calculate_PKstress(m, state.Fp, F)
-end
+MMB.stress_from_state(m::FiniteStrainPlastic, F::Tensor{2,3}, state::FiniteStrainPlasticState) = calculate_PKstress(m, state.Fp, F)
+
 function calculate_PKstress(m::FiniteStrainPlastic, x::FiniteStrainPlasticResidual, old::FiniteStrainPlasticState, F::Tensor)
     ν = effective_stress_gradient(m.yield,  x.Mred)
     Fp = Fx_time_integration(old.Fp, ν, x.Δλ)
@@ -195,13 +194,6 @@ function calculate_PKstress(m::FiniteStrainPlastic, Fp::Tensor, F::Tensor)
     P = Fe ⋅ Se ⋅ transpose(Fpinv)
     return P
 end
-
-# `calculate_PKstress(m, state, F)` already computes the frozen-state (converged
-# `state.Fp`, no Newton re-solve) 1st Piola-Kirchhoff stress; it is used above
-# for the elastic-predictor branch of `material_response`. No
-# reduced-dimensional method is needed: MaterialModelsBase's generic fallback
-# (autodiff-ing through this method via its own `FrozenStressMaterial`) covers it.
-MMB.stress_from_state(m::FiniteStrainPlastic, F::Tensor{2,3}, state::FiniteStrainPlasticState) = calculate_PKstress(m, state, F)
 
 check_solution(x::FiniteStrainPlasticResidual) = x.Δλ < 0 ? throw(MMB.NoLocalConvergence("Plastic: Invalid solution, x.Δλ = ", x.Δλ, " < 0")) : nothing
 

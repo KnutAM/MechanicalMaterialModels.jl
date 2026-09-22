@@ -9,9 +9,14 @@ The resulting stress and stiffness are rotated back, `θ = +|r|` around `r`, bef
 This is equivalent to rotating the material parameter tensors (e.g. stiffness tensor `θ = +|r|` around `r`).
 
 !!! note State variables are in the local coordinate system
-    The state variables are not modified, and are hence defined in the local coordinate system. 
-    Care must therefore be taken to rotate the strain to the local coordinates when evaluating the 
+    The state variables are not modified, and are hence defined in the local coordinate system.
+    Care must therefore be taken to rotate the strain to the local coordinates when evaluating the
     responses, and the output of those evaluations should be rotated back to the global coordinates.
+
+!!! note
+    Wrapping a finite-strain material errors in `RotatedMaterial`'s own
+    `material_response` (a hard `::SymmetricTensor{2,3}` type assertion),
+    independently of `MaterialModelsBase.stress_from_state`.
 
 """
 struct RotatedMaterial{M <: AbstractMaterial, RT <: Vec} <: AbstractMaterial
@@ -41,7 +46,3 @@ function _stress_from_state_rotated(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3
     return rotate(σ_rot, rm.rotation, θ)
 end
 MMB.stress_from_state(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state) = _stress_from_state_rotated(rm, ϵ, state)
-# Disambiguates against MaterialModelsBase's own `(AbstractMaterial, ϵ,
-# ::NoMaterialState)` fallback, which would otherwise be equally specific when
-# `rm.material` is stateless.
-MMB.stress_from_state(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state::MMB.NoMaterialState) = _stress_from_state_rotated(rm, ϵ, state)

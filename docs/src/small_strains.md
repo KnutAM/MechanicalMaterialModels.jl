@@ -86,22 +86,3 @@ BCC12
 GenericCrystallography
 CrystalPlasticity
 ```
-
-## [Postprocessing](@id small_strain_postprocessing)
-`MaterialModelsBase.stress_from_state` ([documented there](https://github.com/KnutAM/MaterialModelsBase.jl/pull/21),
-pending release) provides a generic postprocessing interface: given a strain
-and an already-converged state, it returns the corresponding stress without
-advancing any history/internal variables. This package implements it (i.e.
-extends `stress_from_state` with a method) for [`LinearElastic`](@ref),
-[`Plastic`](@ref), and [`GeneralizedMaxwell`](@ref), including
-lower-dimensional stress states (via `MaterialModelsBase.ReducedStressState`)
-for `LinearElastic` and `Plastic` (see also
-[Finite Strains](@ref finite_strain_postprocessing)).
-
-!!! note "Not (yet) supported"
-    `CrystalPlasticity` (small-strain, despite referencing a finite-strain
-    framework in its docstring) has no `stress_from_state` method.
-    `RotatedMaterial` wrapping a finite-strain material errors in
-    `RotatedMaterial`'s own `material_response` (a hard
-    `::SymmetricTensor{2,3}` type assertion), independently of this
-    interface.

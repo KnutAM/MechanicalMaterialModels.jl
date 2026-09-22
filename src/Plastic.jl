@@ -171,10 +171,6 @@ end
 
 check_solution(x::PlasticResidual) = x.Δλ < 0 ? throw(MMB.NoLocalConvergence("Plastic: Invalid solution, x.Δλ = ", x.Δλ, " < 0")) : nothing
 
-# Reduced-dimensional stress states (e.g. PlaneStress) need no dedicated method
-# here: MaterialModelsBase's generic fallback autodiffs through this full-dim
-# method and gives the same result (this formula is linear in ϵ, so the
-# autodiff-derived tangent is exact, same as the elastic stiffness itself).
 function MMB.stress_from_state(m::Plastic, ϵ::SymmetricTensor{2,3}, state::PlasticState)
     return calculate_stress(m.elastic, ϵ - state.ϵp)
 end
