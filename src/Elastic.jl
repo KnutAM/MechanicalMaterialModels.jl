@@ -93,6 +93,8 @@ end
 
 calculate_stress(m::LinearElastic, ϵ::SymmetricTensor) = m.C⊡ϵ
 
+MMB.stress_from_state(m::LinearElastic, ϵ::SymmetricTensor{2,3}, ::MMB.NoMaterialState) = calculate_stress(m, ϵ)
+
 # Functions for conversion between material and parameter vectors
 MMB.get_vector_length(::LinearElastic{<:Any,<:Any,N}) where{N} = N
 

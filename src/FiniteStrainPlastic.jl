@@ -112,7 +112,7 @@ function MMB.material_response(m::FiniteStrainPlastic, F::Tensor{2,3}, old::Fini
 
     if Φ_trial < 0
         update_extras!(extras)
-        dPdF, P = gradient(F_->calculate_PKstress(m, old, F_), F, :all)
+        dPdF, P = gradient(F_->MMB.stress_from_state(m, F_, old), F, :all)
         return P, dPdF, old
     else
         x0 = initial_guess(m, old, M)
@@ -179,9 +179,8 @@ function get_plastic_state(x::FiniteStrainPlasticResidual, m::FiniteStrainPlasti
     return new, M
 end
 
-function calculate_PKstress(m::FiniteStrainPlastic, state::FiniteStrainPlasticState, F::Tensor)
-    return calculate_PKstress(m, state.Fp, F)
-end
+MMB.stress_from_state(m::FiniteStrainPlastic, F::Tensor{2,3}, state::FiniteStrainPlasticState) = calculate_PKstress(m, state.Fp, F)
+
 function calculate_PKstress(m::FiniteStrainPlastic, x::FiniteStrainPlasticResidual, old::FiniteStrainPlasticState, F::Tensor)
     ν = effective_stress_gradient(m.yield,  x.Mred)
     Fp = Fx_time_integration(old.Fp, ν, x.Δλ)

@@ -18,7 +18,7 @@ The parameters for this model are,
 * `overstress`: An overstress function (`<:Overstress`) or `RateIndependent`.
 
 See [Meyer (2020)](https://doi.org/10.1016/j.ijsolstr.2020.04.037) for a description of this model
-in a finite strain framework. 
+in a finite strain framework.
 """
 @kwdef struct CrystalPlasticity{C, E, T, OS, T_tol} <: AbstractMaterial
     crystal::C          # E.g. BCC, FCC, etc.
@@ -112,3 +112,5 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         end
     end
 end
+
+MMB.stress_from_state(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3}, state::CrystalPlasticityState) = calculate_stress(mat.elastic, ϵ - state.ϵp)

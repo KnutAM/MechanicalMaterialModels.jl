@@ -9,8 +9,8 @@ The resulting stress and stiffness are rotated back, `θ = +|r|` around `r`, bef
 This is equivalent to rotating the material parameter tensors (e.g. stiffness tensor `θ = +|r|` around `r`).
 
 !!! note State variables are in the local coordinate system
-    The state variables are not modified, and are hence defined in the local coordinate system. 
-    Care must therefore be taken to rotate the strain to the local coordinates when evaluating the 
+    The state variables are not modified, and are hence defined in the local coordinate system.
+    Care must therefore be taken to rotate the strain to the local coordinates when evaluating the
     responses, and the output of those evaluations should be rotated back to the global coordinates.
 
 """
@@ -28,8 +28,15 @@ end
 function MMB.material_response(rm::RotatedMaterial, strain::AbstractTensor, args::Vararg{Any, N}) where {N}
     θ = norm(rm.rotation)
     strain_rot = rotate(strain, rm.rotation, -θ)
-    stress_rot, stiff_rot, state = MMB.material_response(rm.material, strain_rot::SymmetricTensor{2,3}, args...)
+    stress_rot, stiff_rot, state = MMB.material_response(rm.material, strain_rot, args...)
     stress = rotate(stress_rot, rm.rotation, θ)
     stiff = rotate(stiff_rot, rm.rotation, θ)
     return stress, stiff, state
+end
+
+function MMB.stress_from_state(rm::RotatedMaterial, ϵ::SecondOrderTensor{3}, state)
+    θ = norm(rm.rotation)
+    ϵ_rot = rotate(ϵ, rm.rotation, -θ)
+    σ_rot = MMB.stress_from_state(rm.material, ϵ_rot, state)
+    return rotate(σ_rot, rm.rotation, θ)
 end

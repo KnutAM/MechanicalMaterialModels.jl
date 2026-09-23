@@ -46,3 +46,8 @@ function MMB.material_response(m::AbstractHyperElastic, F::Tensor{2,3}, old::Abs
 end
 
 MMB.get_tensorbase(::AbstractHyperElastic) = Tensor{2,3}
+
+# Computing `S = 2 ∂Ψ/∂C` (once) is unavoidable to get the stress at all, but
+# `material_response` additionally differentiates through that once more to
+# get the tangent, which isn't needed here.
+MMB.stress_from_state(m::AbstractHyperElastic, F::Tensor{2,3}, ::MMB.NoMaterialState) = F ⋅ compute_stress(m, tdot(F))

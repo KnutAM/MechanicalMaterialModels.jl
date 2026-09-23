@@ -171,6 +171,10 @@ end
 
 check_solution(x::PlasticResidual) = x.Δλ < 0 ? throw(MMB.NoLocalConvergence("Plastic: Invalid solution, x.Δλ = ", x.Δλ, " < 0")) : nothing
 
+function MMB.stress_from_state(m::Plastic, ϵ::SymmetricTensor{2,3}, state::PlasticState)
+    return calculate_stress(m.elastic, ϵ - state.ϵp)
+end
+
 # General residual function 
 function residual(x::PlasticResidual{NKin,NIso}, m::Plastic, old::PlasticState, ϵ, Δt, cache) where{NKin,NIso}
     σ_red = x.σ - sum(x.β)
