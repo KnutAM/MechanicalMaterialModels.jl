@@ -34,10 +34,9 @@ function MMB.material_response(rm::RotatedMaterial, strain::AbstractTensor, args
     return stress, stiff, state
 end
 
-function _stress_from_state_rotated(rm::RotatedMaterial, ϵ::SecondOrderTensor{3}, state)
+function MMB.stress_from_state(rm::RotatedMaterial, ϵ::SecondOrderTensor{3}, state)
     θ = norm(rm.rotation)
     ϵ_rot = rotate(ϵ, rm.rotation, -θ)
     σ_rot = MMB.stress_from_state(rm.material, ϵ_rot, state)
     return rotate(σ_rot, rm.rotation, θ)
 end
-MMB.stress_from_state(rm::RotatedMaterial, ϵ::SecondOrderTensor{3}, state) = _stress_from_state_rotated(rm, ϵ, state)
