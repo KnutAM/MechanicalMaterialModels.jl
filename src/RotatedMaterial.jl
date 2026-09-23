@@ -13,11 +13,6 @@ This is equivalent to rotating the material parameter tensors (e.g. stiffness te
     Care must therefore be taken to rotate the strain to the local coordinates when evaluating the
     responses, and the output of those evaluations should be rotated back to the global coordinates.
 
-!!! note
-    Wrapping a finite-strain material errors in `RotatedMaterial`'s own
-    `material_response` (a hard `::SymmetricTensor{2,3}` type assertion),
-    independently of `MaterialModelsBase.stress_from_state`.
-
 """
 struct RotatedMaterial{M <: AbstractMaterial, RT <: Vec} <: AbstractMaterial
     material::M
@@ -33,16 +28,16 @@ end
 function MMB.material_response(rm::RotatedMaterial, strain::AbstractTensor, args::Vararg{Any, N}) where {N}
     θ = norm(rm.rotation)
     strain_rot = rotate(strain, rm.rotation, -θ)
-    stress_rot, stiff_rot, state = MMB.material_response(rm.material, strain_rot::SymmetricTensor{2,3}, args...)
+    stress_rot, stiff_rot, state = MMB.material_response(rm.material, strain_rot, args...)
     stress = rotate(stress_rot, rm.rotation, θ)
     stiff = rotate(stiff_rot, rm.rotation, θ)
     return stress, stiff, state
 end
 
-function _stress_from_state_rotated(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state)
+function _stress_from_state_rotated(rm::RotatedMaterial, ϵ::SecondOrderTensor{3}, state)
     θ = norm(rm.rotation)
     ϵ_rot = rotate(ϵ, rm.rotation, -θ)
     σ_rot = MMB.stress_from_state(rm.material, ϵ_rot, state)
     return rotate(σ_rot, rm.rotation, θ)
 end
-MMB.stress_from_state(rm::RotatedMaterial, ϵ::SymmetricTensor{2,3}, state) = _stress_from_state_rotated(rm, ϵ, state)
+MMB.stress_from_state(rm::RotatedMaterial, ϵ::SecondOrderTensor{3}, state) = _stress_from_state_rotated(rm, ϵ, state)

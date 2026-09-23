@@ -80,6 +80,8 @@ function MMB.material_response(m::SimplePlastic, ϵ::SymmetricTensor{2,3}, old::
     end
 end
 
+MMB.stress_from_state(m::SimplePlastic, ϵ::SymmetricTensor{2,3}, state::SimplePlasticState) = 2 * m.G * dev(ϵ - state.ϵp) + 3 * m.K * vol(ϵ)
+
 function calculate_κ(Δλ, m::SimplePlastic, old::SimplePlasticState)
     return m.κ∞ * (old.κ + Δλ * m.Hiso) / (m.κ∞ + Δλ * m.Hiso)
 end

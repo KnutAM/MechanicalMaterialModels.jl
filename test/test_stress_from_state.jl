@@ -125,6 +125,81 @@
         @test stress_from_state(rss, ϵ1_red, state1_red) ≈ σ1_red
     end
 
+    @testset "RotatedMaterial (finite strain)" begin
+        nh = CompressibleNeoHooke(G=80.e3, K=160.e3)
+        r = 2 * π * rand(Vec{3})
+        rm = RotatedMaterial(nh, r)
+        θ = norm(r)
+
+        # material_response itself must now support a non-symmetric F
+        F = one(Tensor{2,3}) + rand(Tensor{2,3}) / 20
+        state = initial_material_state(rm)
+        P, dPdF, _ = material_response(rm, F, state)
+        F_local = rotate(F, r, -θ)
+        P_local, dPdF_local, _ = material_response(nh, F_local, initial_material_state(nh))
+        @test P ≈ rotate(P_local, r, θ)
+        @test dPdF ≈ rotate(dPdF_local, r, θ)
+        @test stress_from_state(rm, F, state) ≈ P
+
+        # Frozen-state postprocessing for a rotated, stateful finite-strain material
+        E, ν, Y0 = 210.e3, 0.3, 100.0
+        nh_fsp = CompressibleNeoHooke(G=convert_hooke_param(:G; E, ν), K=convert_hooke_param(:K; E, ν))
+        m_fsp = FiniteStrainPlastic(elastic=nh_fsp, yield=Y0, isotropic=Voce(Hiso=10.e3, κ∞=200.0), kinematic=ArmstrongFrederick(Hkin=1.e4, β∞=150.0))
+        rm_fsp = RotatedMaterial(m_fsp, r)
+
+        state0 = initial_material_state(rm_fsp)
+        F1 = Tensor{2,3}((i, j) -> i == j ? (i == 1 ? 1.02 : 1.0) : 0.0)
+        _, _, state1 = material_response(rm_fsp, F1, state0, nothing)
+
+        F2 = Tensor{2,3}((i, j) -> i == j ? (i == 1 ? 1.03 : 1.0) : 0.0)
+        σ_current = stress_from_state(rm_fsp, F2, state1)
+        F2_local = rotate(F2, r, -θ)
+        σ_local_expected = MechMat.calculate_PKstress(m_fsp, state1.Fp, F2_local)
+        σ_expected = rotate(σ_local_expected, r, θ)
+        @test σ_current ≈ σ_expected
+    end
+
+    @testset "CrystalPlasticity" begin
+        m = CrystalPlasticity(crystal=FCC(), elastic=LinearElastic(E=100.e3, ν=0.3), yield=50.0,
+            q=0.5, h0=10.e3, h∞=1.e3, ζ=1.0, Hkin=0.0, β∞=25.0, overstress=NortonOverstress(tstar=1.0, nexp=2.0))
+
+        state0 = initial_material_state(m)
+        ϵ1 = SymmetricTensor{2,3}((i, j) -> i == 2 && j == 1 ? 0.01 : 0.0)
+        σ1, _, state1 = material_response(m, ϵ1, state0, 1.e-3)
+        @test stress_from_state(m, ϵ1, state1) ≈ σ1
+        @assert state1.ϵp ≉ state0.ϵp # sanity: this test only matters if plastic loading occurred
+
+        # Frozen-state postprocessing: a different strain should give a purely
+        # elastic increment from state1, NOT a fresh plastic correction.
+        ϵ2 = ϵ1 + SymmetricTensor{2,3}((i, j) -> i == 2 && j == 1 ? 0.001 : 0.0)
+        σ2_frozen = stress_from_state(m, ϵ2, state1)
+        @test σ2_frozen ≈ σ1 + m.elastic.C ⊡ (ϵ2 - ϵ1)
+        σ2_true, _, state2_true = material_response(m, ϵ2, state1, 1.e-3)
+        @test !(σ2_true ≈ σ2_frozen)
+        @assert state2_true.ϵp ≉ state1.ϵp
+    end
+
+    @testset "SimplePlastic" begin
+        G, K = 80.e3, 160.e3
+        Y0, Hiso, κ∞, Hkin, β∞ = 100.0, 10.e3, 200.0, 1.e4, 150.0
+        m = SimplePlastic(; G, K, Y0, Hiso, κ∞, Hkin, β∞)
+
+        state0 = initial_material_state(m)
+        ϵ1 = SymmetricTensor{2,3}((i, j) -> (i, j) == (1, 1) ? 0.01 : 0.0)
+        σ1, _, state1 = material_response(m, ϵ1, state0, nothing)
+        @test stress_from_state(m, ϵ1, state1) ≈ σ1
+        @assert state1.ϵp ≉ state0.ϵp # sanity: this test only matters if plastic loading occurred
+
+        # Frozen-state postprocessing: a different strain should give a purely
+        # elastic increment from state1, NOT a fresh plastic correction.
+        ϵ2 = ϵ1 + SymmetricTensor{2,3}((i, j) -> (i, j) == (1, 1) ? 0.02 : 0.0)
+        σ2_frozen = stress_from_state(m, ϵ2, state1)
+        @test σ2_frozen ≈ σ1 + 2 * G * dev(ϵ2 - ϵ1) + 3 * K * vol(ϵ2 - ϵ1)
+        σ2_true, _, state2_true = material_response(m, ϵ2, state1, nothing)
+        @test !(σ2_true ≈ σ2_frozen)
+        @assert state2_true.ϵp ≉ state1.ϵp
+    end
+
     @testset "HyperElastic" begin
         models = (NeoHooke(G=1 + rand()), CompressibleNeoHooke(G=1 + rand(), K=10 + rand()), SaintVenant(LinearElastic(E=210.e3, ν=0.3)))
         for m in models
