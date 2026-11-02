@@ -34,8 +34,9 @@ as well as the gradient, ν
 """
 function vonmises_and_gradient(σ::SecondOrderTensor{3})
     σ_dev = dev(σ)
-    σvm = sqrt(3*(σ_dev ⊡ transpose(σ_dev))/2)
-    return σvm, (3/(2*σvm))*transpose(σ_dev)
+    σ_dev_t = transpose(σ_dev)
+    σvm = sqrt(3*(σ_dev ⊡ σ_dev_t)/2)
+    return σvm, (3 / (2 * σvm)) * σ_dev_t
 end
 
 """
@@ -89,3 +90,19 @@ Convert the elements of `args` into an `SVector`.
 
 @inline static_vector(a::StaticVector, b::StaticVector) = vcat(a, b)
 @inline static_vector(a::StaticVector) = a
+
+"""
+    remove_dual(x::T) where {T <: Number}
+    remove_dual(x::AbstractTensor{<:Any, <:Any, T}) where {T}
+
+Removes the dual part if `T <: ForwardDiff.Dual`, extract the value part, helpful
+when implementing custom gradients.
+"""
+function remove_dual end
+
+# Scalars
+remove_dual(x::ForwardDiff.Dual) = ForwardDiff.value(x)
+remove_dual(x::Number) = x
+# Tensors
+remove_dual(x::AbstractTensor{<:Any, <:Any, <:ForwardDiff.Dual}) = Tensors._extract_value(x)
+remove_dual(x::AbstractTensor) = x

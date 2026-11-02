@@ -25,9 +25,14 @@ yield limit due to isotropic hardening (i.e. ``\\kappa``).
 end
 initial_yield_limit(yc::VonMises) = yc.Y0
 
-effective_stress(::VonMises, σred) = vonmises(σred)
+effective_stress(::VonMises, σred::SecondOrderTensor{3}) = vonmises(σred)
 
-effective_stress_gradient(yc::VonMises, σred) = (3/2)*dev(σred)/effective_stress(yc, σred) # More efficient than using AD above
+ # More efficient than using AD above
+function effective_stress_gradient(::VonMises, σred::SecondOrderTensor{3})
+    σred_dev = dev(σred)
+    σred_dev_t = transpose(σred_dev)
+    return σred_dev_t / sqrt(2*(σred_dev ⊡ σred_dev_t)/3)
+end
 
 MMB.get_vector_length(::VonMises) = 1
 MMB.get_vector_eltype(::VonMises{T}) where {T} = T
@@ -57,8 +62,27 @@ end
 
 initial_yield_limit(yc::DruckerPrager) = yc.Y0
 
-function effective_stress(yc::DruckerPrager, σred::SymmetricTensor{2,3,T}) where T
-    return sqrt(T(3)/2)*norm(dev(σred)) - yc.B*tr(σred)
+function effective_stress(yc::DruckerPrager, σred::SecondOrderTensor{3})
+    return vonmises(σred) - yc.B*tr(σred)
+end
+
+# Handles sub-gradient at dev(σred) = 0
+function effective_stress_gradient(yc::DruckerPrager, σred::SecondOrderTensor{3})
+    σred_dev = dev(σred)
+    σred_dev_t = transpose(σred_dev)
+    σred_dev_sq = σred_dev ⊡ σred_dev_t
+    ν_tr = - yc.B * one(σred)
+    iszero(σred_dev_sq) && return ν_tr # Subdifferential
+    ν_dev = σred_dev_t / sqrt(2 * σred_dev_sq / 3)
+    return ν_dev + ν_tr
+end
+
+# Overload to support automatic differentiation.
+function effective_stress(yc::DruckerPrager, σred::SecondOrderTensor{3, <:ForwardDiff.Dual})
+    σred_nondual = remove_dual(σred)
+    ν = effective_stress_gradient(yc, σred_nondual)
+    # Reusing `effective_stress` ensures that nested duals also work as intended.
+    return effective_stress(yc, σred_nondual) + ν ⊡ (σred - σred_nondual)
 end
 
 MMB.get_vector_length(::DruckerPrager) = 2
