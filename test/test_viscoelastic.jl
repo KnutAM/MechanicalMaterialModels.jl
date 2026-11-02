@@ -35,7 +35,7 @@
         @test σ ≈ D0 ⊡ Δϵ
 
         # Consider load stepping and check that we get the correct saturated stress level 
-        T_max = 20 * relaxation_time(m)
+        T_max = 40 * relaxation_time(m)
         n_steps = 100
         t_old = 0
         state = initial_material_state(m)
@@ -59,4 +59,14 @@
 
     @test c1.η == η
     @test c2.η ≈ η # Correct conversion
+
+    # Regression test: the relaxation time `t` must match the actual decay
+    # of the Maxwell element's stress, i.e. t = η / G
+    G_test = 100.0
+    t_test = 2.0
+    m_relax = Maxwell(; G = G_test, t = t_test)
+    ϵ0 = rand(SymmetricTensor{2,3})
+    σ0 = 2 * G_test * dev(ϵ0)
+    σ_relaxed = MechMat.calculate_stress(m_relax, ϵ0, zero(ϵ0), t_test)
+    @test σ_relaxed ≈ σ0 / 2
 end

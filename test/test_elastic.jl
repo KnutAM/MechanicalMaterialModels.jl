@@ -32,4 +32,33 @@
     @test contains(show_as_string(m_cubic), "Cubic symmetric")
     m_custom = LinearElastic{Float64,:custom,5}(m.C, rand(5))
     @test contains(show_as_string(m_custom), "custom")
+
+    # Regression test: cubic-symmetry shear response must match an equivalent
+    # isotropic material (shear stress should not be doubled)
+    G_shear = 400.0
+    m_cubic_shear = LinearElastic{:cubicsymmetry}(C1111=1200.0, C1122=400.0, C1212=G_shear)
+    m_iso_shear = LinearElastic{:isotropic}(E=2*G_shear*(1+0.0), ν=0.0)
+    ϵ12 = SymmetricTensor{2,3}((i,j) -> (i,j) in ((1,2),(2,1)) ? 0.01 : 0.0)
+    σ_cubic = MechMat.calculate_stress(m_cubic_shear, ϵ12)
+    σ_iso = MechMat.calculate_stress(m_iso_shear, ϵ12)
+    @test σ_cubic[1,2] ≈ σ_iso[1,2]
+    @test σ_cubic[1,2] ≈ 8.0
+
+    # Regression test: the stiffness tensor must match the 9-component Voigt
+    # matrix documented in the `LinearElastic{:cubicsymmetry}` docstring,
+    # including the off-diagonal minor-symmetry couplings
+    C1111, C1122, C1212 = v2
+    m_doc = LinearElastic{:cubicsymmetry}(; C1111, C1122, C1212)
+    voigt_doc = [
+        C1111    C1122    C1122    0        0        0        0        0        0
+        C1122    C1111    C1122    0        0        0        0        0        0
+        C1122    C1122    C1111    0        0        0        0        0        0
+        0        0        0        C1212    0        0        C1212    0        0
+        0        0        0        0        C1212    0        0        C1212    0
+        0        0        0        0        0        C1212    0        0        C1212
+        0        0        0        C1212    0        0        C1212    0        0
+        0        0        0        0        C1212    0        0        C1212    0
+        0        0        0        0        0        C1212    0        0        C1212
+    ]
+    @test tovoigt(Tensor{4,3}(m_doc.C)) ≈ voigt_doc
 end
