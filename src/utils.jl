@@ -90,3 +90,19 @@ Convert the elements of `args` into an `SVector`.
 
 @inline static_vector(a::StaticVector, b::StaticVector) = vcat(a, b)
 @inline static_vector(a::StaticVector) = a
+
+"""
+    remove_dual(x::T) where {T <: Number}
+    remove_dual(x::AbstractTensor{<:Any, <:Any, T}) where {T}
+
+Removes the dual part if `T <: ForwardDiff.Dual`, extract the value part, helpful
+when implementing custom gradients.
+"""
+function remove_dual end
+
+# Scalars
+remove_dual(x::ForwardDiff.Dual) = ForwardDiff.value(x)
+remove_dual(x::Number) = x
+# Tensors
+remove_dual(x::AbstractTensor{<:Any, <:Any, <:ForwardDiff.Dual}) = Tensors._extract_value(x)
+remove_dual(x::AbstractTensor) = x

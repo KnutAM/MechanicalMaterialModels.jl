@@ -66,7 +66,7 @@ function effective_stress(yc::DruckerPrager, σred::SecondOrderTensor{3})
     return vonmises(σred) - yc.B*tr(σred)
 end
 
-# More efficient than using AD above, and handles sub-gradient at dev(σred) = 0
+# Handles sub-gradient at dev(σred) = 0
 function effective_stress_gradient(yc::DruckerPrager, σred::SecondOrderTensor{3})
     σred_dev = dev(σred)
     σred_dev_t = transpose(σred_dev)
@@ -75,6 +75,14 @@ function effective_stress_gradient(yc::DruckerPrager, σred::SecondOrderTensor{3
     iszero(σred_dev_sq) && return ν_tr # Subdifferential
     ν_dev = σred_dev_t / sqrt(2 * σred_dev_sq / 3)
     return ν_dev + ν_tr
+end
+
+# Overload to support automatic differentiation.
+function effective_stress(yc::DruckerPrager, σred::SecondOrderTensor{3, <:ForwardDiff.Dual})
+    σred_nondual = remove_dual(σred)
+    ν = effective_stress_gradient(yc, σred_nondual)
+    # Reusing `effective_stress` ensures that nested duals also work as intended.
+    return effective_stress(yc, σred_nondual) + ν ⊡ (σred - σred_nondual)
 end
 
 MMB.get_vector_length(::DruckerPrager) = 2
