@@ -53,32 +53,15 @@
 
             # Show
             @test contains(show_as_string(yc), "DruckerPrager with")
-        end
-    end
 
-    @testset "DruckerPrager apex" begin
-        # At the hydrostatic apex, dev(σred) = 0, which is non-differentiable for the
-        # plain vonmises(σred) = sqrt(3/2*dev(σred)⊡dev(σred)) expression (0/0). This must
-        # work both for `effective_stress_gradient` itself, and for `effective_stress`
-        # when differentiated through (e.g. by a Newton solver computing its own
-        # Jacobian via automatic differentiation of the whole residual, which goes
-        # through `effective_stress`, not `effective_stress_gradient`).
-        for TB in (SymmetricTensor{2,3}, Tensor{2,3}), p in (-1.0, 0.0, 4.0) # exactly representable, so dev(p*I) is exactly 0
-            Y0, B = rand(2)
-            yc = DruckerPrager(;Y0, B)
-            σ_apex = p * one(TB)
-            @test iszero(dev(σ_apex))
-
-            ν = MechMat.effective_stress_gradient(yc, σ_apex)
-            @test !any(isnan, ν)
-            @test ν ≈ -B * one(σ_apex)
-
-            # Differentiating `effective_stress` itself (as a Newton solver's automatic
-            # differentiation of its residual would) must not produce NaN/Inf, and must
-            # agree with the hand-coded (sub)gradient above.
-            ν_ad = gradient(s -> MechMat.effective_stress(yc, s), σ_apex)
-            @test !any(isnan, ν_ad)
-            @test ν_ad ≈ ν
+            # Apex (dev(σ) = 0): sub-differential must be finite, both directly and
+            # when differentiated through (as a Newton solver's AD would).
+            for p in (-1.0, 0.0, 4.0) # exactly representable, so dev(p*I) is exactly 0
+                σ_apex = p * one(TB)
+                ν = MechMat.effective_stress_gradient(yc, σ_apex)
+                @test ν ≈ -B * one(σ_apex)
+                @test ν ≈ gradient(s -> MechMat.effective_stress(yc, s), σ_apex)
+            end
         end
     end
 end
