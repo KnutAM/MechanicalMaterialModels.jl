@@ -34,8 +34,9 @@ as well as the gradient, ν
 """
 function vonmises_and_gradient(σ::SecondOrderTensor{3})
     σ_dev = dev(σ)
-    σvm = sqrt(3*(σ_dev ⊡ transpose(σ_dev))/2)
-    return σvm, (3/(2*σvm))*transpose(σ_dev)
+    σ_dev_t = transpose(σ_dev)
+    σvm = sqrt(3*(σ_dev ⊡ σ_dev_t)/2)
+    return σvm, (3 / (2 * σvm)) * σ_dev_t
 end
 
 """

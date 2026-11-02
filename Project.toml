@@ -1,7 +1,7 @@
 name = "MechanicalMaterialModels"
 uuid = "b3282f9b-607f-4337-ab95-e5488ab5652c"
+version = "0.3.0"
 authors = ["Knut Andreas Meyer and contributors"]
-version = "0.3"
 
 [deps]
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
@@ -11,22 +11,22 @@ Newton = "83aa5b51-0588-403c-85e4-434ec185aae7"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 
+[sources]
+MaterialModelsBase = {rev = "main", url = "https://github.com/knutam/MaterialModelsBase.jl"}
+MaterialModelsTesting = {url = "https://github.com/KnutAM/MaterialModelsTesting.jl"}
+Newton = {rev = "main", url = "https://github.com/knutam/Newton.jl"}
+
 [compat]
-julia = "1.11"
-Tensors = "1.16.1"
 MaterialModelsBase = "0.3, 0.4"
 Newton = "0.2"
+Tensors = "1.16.1"
+julia = "1.11"
 
 [extras]
 FiniteDiff = "6a86dc24-6348-571c-b903-95158fe2bd41"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 MaterialModelsTesting = "882b014b-b96c-4115-8629-e17fb35110d2"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "ForwardDiff", "FiniteDiff", "MaterialModelsTesting"]
-
-[sources]
-MaterialModelsBase = {url = "https://github.com/knutam/MaterialModelsBase.jl"}
-Newton = {url = "https://github.com/knutam/Newton.jl"}
-MaterialModelsTesting = {url = "https://github.com/KnutAM/MaterialModelsTesting.jl"}
