@@ -51,8 +51,17 @@
             MatTest.test_vectorconversion(Float64, yc)
             MatTest.test_vectorconversion(MatTest.DualT{Float32}, yc)
 
-            # Show 
+            # Show
             @test contains(show_as_string(yc), "DruckerPrager with")
+
+            # Apex (dev(σ) = 0): sub-differential must be finite, both directly and
+            # when differentiated through (as a Newton solver's AD would).
+            for p in (-1.0, 0.0, 4.0) # exactly representable, so dev(p*I) is exactly 0
+                σ_apex = p * one(TB)
+                ν = MechMat.effective_stress_gradient(yc, σ_apex)
+                @test ν ≈ -B * one(σ_apex)
+                @test ν ≈ gradient(s -> MechMat.effective_stress(yc, s), σ_apex)
+            end
         end
     end
 end
