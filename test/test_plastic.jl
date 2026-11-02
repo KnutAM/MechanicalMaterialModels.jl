@@ -66,6 +66,34 @@
     @test contains(show_str, "Voce")
     @test contains(show_str, "ArmstrongFrederick")
     @test contains(show_str, "Norton overstress")
+
+    @testset "DruckerPrager apex" begin
+        # Hydrostatic loading can put the trial stress exactly at the DruckerPrager
+        # cone's apex (dev(σ) = 0), where the yield criterion's effective stress is
+        # non-differentiable in the naive sqrt(dev⊡dev) sense. The local Newton solve's
+        # own automatic differentiation of the residual must still produce a finite
+        # Jacobian (not NaN/Inf) and converge.
+        e_dp = LinearElastic(E=1000.0, ν=0.25)
+        ϵ = -0.02 * one(SymmetricTensor{2,3})  # hydrostatic compression -> apex
+
+        m_dp = Plastic(;elastic=e_dp, yield=DruckerPrager(;Y0=10.0, B=0.1),
+            isotropic=Voce(Hiso=100.0, κ∞=50.0), kinematic=ArmstrongFrederick(Hkin=50.0, β∞=20.0))
+        old = initial_material_state(m_dp)
+        σ, dσdϵ, state = material_response(m_dp, ϵ, old)
+        @test !any(isnan, σ)
+        @test !any(isnan, dσdϵ)
+        @test dev(σ) ≈ zero(σ) atol=1e-8  # stays on the hydrostatic axis
+        # Must sit back on the yield surface after the return mapping.
+        κ = sum(state.κ)
+        @test MechMat.yield_criterion(m_dp.yield, σ - sum(state.β), κ) ≈ 0.0 atol=1e-6
+
+        # Also exercise it without any hardening (the originally-failing degenerate case).
+        m_dp0 = Plastic(;elastic=e_dp, yield=DruckerPrager(;Y0=10.0, B=0.1),
+            isotropic=(Voce(Hiso=0.0, κ∞=1.0),), kinematic=(ArmstrongFrederick(Hkin=0.0, β∞=1.0),))
+        σ0, dσdϵ0, _ = material_response(m_dp0, ϵ, initial_material_state(m_dp0))
+        @test !any(isnan, σ0)
+        @test !any(isnan, dσdϵ0)
+    end
 end
 
 @testset "SimplePlastic" begin

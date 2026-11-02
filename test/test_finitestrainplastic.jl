@@ -25,3 +25,22 @@
     P11, P, dPdF, state_fs, F_full = run_normal(m_fs, F11_vec; Δt = NaN, stress_state=UniaxialNormalStress(), ϵ_full = one(Tensor{2,3}))
     @test norm(σ11 - P11)/norm(P11) < 1e-4
 end
+
+@testset "FiniteStrainPlastic anisotropic non-symmetric Mandel stress" begin
+    # `SaintVenant` wrapping an anisotropic `LinearElastic` produces a Mandel stress
+    # M = Ce⋅Se that is genuinely non-symmetric (Se = C:E is not coaxial with Ce, unlike
+    # for an isotropic elastic law). The VonMises flow direction used for Fp/backstress
+    # evolution must then be computed consistently with the true (non-symmetric-aware)
+    # gradient of the scalar effective stress.
+    el_aniso = LinearElastic{:cubicsymmetry}(C1111=1200.0, C1122=400.0, C1212=300.0)
+    elastic = SaintVenant(el_aniso)
+
+    F = Tensor{2,3}((1.05, 0.08, -0.03, 0.02, 0.97, 0.06, -0.04, 0.01, 1.03))
+    M = MechMat.mandel_stress(elastic, F)
+    @test !(M ≈ M')  # confirms this case actually exercises the non-symmetric path
+
+    yc = VonMises(100.0)
+    ν = MechMat.effective_stress_gradient(yc, M)
+    ν_ad = gradient(s -> MechMat.effective_stress(yc, s), M)
+    @test ν ≈ ν_ad
+end
