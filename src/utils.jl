@@ -2,9 +2,10 @@
     maketuple_or_nothing(x)
 
 * `x` is a single value: Convert to a `Tuple` of length 1
-* `x` is a `Tuple` or `Nothing`: Return `x`
+* `x` is a `Tuple`: Return `x`
+* `x` is `Nothing`: Return the empty `Tuple`, `()`
 """
-maketuple_or_nothing(::Nothing) = nothing
+maketuple_or_nothing(::Nothing) = ()
 maketuple_or_nothing(x::Tuple) = x
 maketuple_or_nothing(x::Any) = (x,)
 
