@@ -30,22 +30,26 @@ LinearElastic(::Val{:general})
 
 Create a `LinearElastic` material where the stiffness tensor,
 ``\\mathsf{\\boldsymbol{C}}``, possesses cubic symmetry along the coordinate axes.
-Using the 9-component Voigt notation, ``\\mathsf{\\boldsymbol{C}}`` can be expressed as
+Using the 9-component (non-reduced) Voigt notation, with components ordered as
+``(11,22,33,23,13,12,32,31,21)`` (i.e. matching `Tensors.tovoigt(Tensor{4,3}(C))`),
+``\\mathsf{\\boldsymbol{C}}`` can be expressed as
 
 ```math
-\\mathsf{\\boldsymbol{C}} = 
+\\mathsf{\\boldsymbol{C}} =
 \\begin{bmatrix}
 C_{1111} & C_{1122} & C_{1122} & 0 & 0 & 0 & 0 & 0 & 0 \\\\
 C_{1122} & C_{1111} & C_{1122} & 0 & 0 & 0 & 0 & 0 & 0 \\\\
 C_{1122} & C_{1122} & C_{1111} & 0 & 0 & 0 & 0 & 0 & 0 \\\\
-0 & 0 & 0 & 2C_{1212} & 0 & 0 & 0 & 0 & 0 \\\\
-0 & 0 & 0 & 0 & 2C_{1212} & 0 & 0 & 0 & 0 \\\\
-0 & 0 & 0 & 0 & 0 & 2C_{1212} & 0 & 0 & 0 \\\\
-0 & 0 & 0 & 0 & 0 & 0 & 2C_{1212} & 0 & 0 \\\\
-0 & 0 & 0 & 0 & 0 & 0 & 0 & 2C_{1212} & 0 \\\\
-0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 2C_{1212} \\\\
+0 & 0 & 0 & C_{1212} & 0 & 0 & C_{1212} & 0 & 0 \\\\
+0 & 0 & 0 & 0 & C_{1212} & 0 & 0 & C_{1212} & 0 \\\\
+0 & 0 & 0 & 0 & 0 & C_{1212} & 0 & 0 & C_{1212} \\\\
+0 & 0 & 0 & C_{1212} & 0 & 0 & C_{1212} & 0 & 0 \\\\
+0 & 0 & 0 & 0 & C_{1212} & 0 & 0 & C_{1212} & 0 \\\\
+0 & 0 & 0 & 0 & 0 & C_{1212} & 0 & 0 & C_{1212} \\\\
 \\end{bmatrix}
 ```
+where the off-diagonal ``C_{1212}`` blocks (coupling e.g. the ``12`` and ``21``
+components) come from the tensor's minor symmetry, ``C_{1212}=C_{1221}=C_{2112}=C_{2121}``.
 """
 LinearElastic(::Val{:cubicsymmetry})
 
@@ -79,7 +83,7 @@ function LinearElastic{:cubicsymmetry}(; C1111, C1122, C1212)
         function f(i,j,k,l)
             i==j==k==l     && return C1111
             (i==j && k==l) && return C1122
-            (i,j)==(k,l)   && return 2*C1212
+            (i,j)==(k,l)   && return C1212
             return zero(T)
         end
         )
