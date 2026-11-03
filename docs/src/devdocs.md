@@ -8,6 +8,7 @@ for understanding the code, but these may change.
 ```@docs
 maketuple_or_nothing
 get_promoted_type
+promote_tuple_eltype
 baseof
 vector_residual!
 compute_potential

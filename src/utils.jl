@@ -2,19 +2,31 @@
     maketuple_or_nothing(x)
 
 * `x` is a single value: Convert to a `Tuple` of length 1
-* `x` is a `Tuple` or `Nothing`: Return `x`
+* `x` is a `Tuple`: Return `x`
+* `x` is `Nothing`: Return the empty `Tuple`, `()`
 """
-maketuple_or_nothing(::Nothing) = nothing
+maketuple_or_nothing(::Nothing) = ()
 maketuple_or_nothing(x::Tuple) = x
 maketuple_or_nothing(x::Any) = (x,)
 
 """
     get_promoted_type(args...)
 
-Get the promoted type for the type of the arguments, 
+Get the promoted type for the type of the arguments,
 e.g. `get_promoted_type(1, 1.f0)` is `Float32`
 """
 get_promoted_type(args...) = promote_type(map(typeof, args)...)
+
+"""
+    promote_tuple_eltype(::Type{T}, xs::Tuple) where {T}
+
+Fold over the entries of `xs` (`Number`s or `Tensors.jl` tensors), promoting `T`
+with each entry's scalar element type. Returns `T` unchanged for an empty tuple.
+"""
+promote_tuple_eltype(::Type{T}, ::Tuple{}) where {T} = T
+function promote_tuple_eltype(::Type{T}, xs::Tuple) where {T}
+    return promote_tuple_eltype(promote_type(T, eltype(first(xs))), Base.tail(xs))
+end
 
 """ 
     function vonmises(σ::SecondOrderTensor{3})
