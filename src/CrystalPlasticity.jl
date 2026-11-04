@@ -102,12 +102,17 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         if converged
             all(dγ -> dγ > -mat.tolerance, Δγ) || throw(MMB.NoLocalConvergence("Slip opposite to trial stress should not happen"))
             σ = calculate_stress(mat, Δγ, old, ϵ, ν_trial)
+            new = calculate_state(mat, Δγ, old, ν_trial)
+            τ_conv = map((β, s, m) -> s ⋅ σ ⋅ m - β, new.β, get_slip_directions(mat.crystal), get_slip_planes(mat.crystal))
+            all(zip(Δγ, ν_trial, τ_conv, new.κ)) do (dγ, ν_tr, τ, κ)
+                dγ <= mat.tolerance || (!iszero(ν_tr) && ν_tr * τ >= -mat.tolerance * (mat.yield + κ))
+            end || throw(MMB.NoLocalConvergence("Converged slip direction inconsistent with the frozen trial direction"))
             # R(Δγ(ϵ), ϵ) = 0 => ∂R/∂x ∂γ/∂ϵ = - ∂R/∂ϵ
             # dσ/dϵ = ∂σ/∂ϵ + ∂σ/∂γ ∂γ/∂ϵ = ∂σ/∂ϵ - ∂σ/∂γ [∂R/∂x]⁻¹ ∂R/∂ϵ
             ∂σ∂γ = ForwardDiff.jacobian(γ -> tomandel(SVector, calculate_stress(mat, γ, old, ϵ, ν_trial)), Δγ)
             ∂r∂ϵ = ForwardDiff.jacobian(e -> residual(mat, Δγ, old, frommandel(SymmetricTensor{2,3}, e), ν_trial, Δt), tomandel(SVector, ϵ))
             dσdϵ = mat.elastic.C - frommandel(SymmetricTensor{4,3}, ∂σ∂γ * (∂r∂x \ ∂r∂ϵ))
-            return σ, dσdϵ, calculate_state(mat, Δγ, old, ν_trial)
+            return σ, dσdϵ, new
         else
             throw(MMB.NoLocalConvergence("$(typeof(mat)): newtonsolve! didn't converge, ϵ = ", ϵ))
         end
