@@ -16,7 +16,7 @@ promote_tuple_eltype(::Type{T}, ::Tuple{}) where {T} = T
 function promote_tuple_eltype(::Type{T}, xs::Tuple) where {T}
     return promote_tuple_eltype(promote_type(T, eltype(first(xs))), Base.tail(xs))
 end
-function promote_tuple_eltype(::Type{T}, xs::Tuple, args::Vararg{Tuple, N}) where N
+function promote_tuple_eltype(::Type{T}, xs::Tuple, args::Vararg{Tuple, N}) where {T, N}
     return promote_tuple_eltype(promote_tuple_eltype(T, xs), args...)
 end
 
