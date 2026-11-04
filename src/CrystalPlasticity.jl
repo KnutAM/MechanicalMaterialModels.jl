@@ -102,9 +102,10 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         if converged
             σ = calculate_stress(mat, Δγ, old, ϵ, ν_trial)
             new = calculate_state(mat, Δγ, old, ν_trial)
-            τ_conv = map((β, s, m) -> s ⋅ σ ⋅ m - β, new.β, get_slip_directions(mat.crystal), get_slip_planes(mat.crystal))
-            all(zip(ν_trial, τ_conv, new.κ)) do (ν_tr, τ, κ)
-                abs(τ) <= (mat.yield + κ) || (!iszero(ν_tr) && ν_tr * τ >= 0)
+            τred = map((β, s, m) -> s ⋅ σ ⋅ m - β, new.β, get_slip_directions(mat.crystal), get_slip_planes(mat.crystal))
+            all(zip(ν_trial, τred, new.κ)) do (ν_tr, τr, κ)
+                # Elastic (anything ok)    or plastic: check correct sign(ν_tr)
+                abs(τr) <= (mat.yield + κ) || ν_tr == sign(τr)
             end || throw(MMB.NoLocalConvergence("Converged slip direction inconsistent with the frozen trial direction"))
             # R(Δγ(ϵ), ϵ) = 0 => ∂R/∂x ∂γ/∂ϵ = - ∂R/∂ϵ
             # dσ/dϵ = ∂σ/∂ϵ + ∂σ/∂γ ∂γ/∂ϵ = ∂σ/∂ϵ - ∂σ/∂γ [∂R/∂x]⁻¹ ∂R/∂ϵ
