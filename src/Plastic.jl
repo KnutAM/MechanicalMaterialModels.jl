@@ -37,9 +37,9 @@ struct Plastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     maxiter::Int        # Maximum number of iterations for local problem (default 100)
     tolerance::T        # Absolute tolerance for local problem (default √eps(T))
 end
-function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_vector_eltype(elastic))))
-    iso = maketuple_or_nothing(isotropic)
-    kin = maketuple_or_nothing(kinematic)
+function Plastic(;elastic, yield, isotropic=(), kinematic=(), overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_vector_eltype(elastic))))
+    iso = isa(isotropic, Tuple) ? isotropic : (isotropic,) # Allow single isotropic hardening law
+    kin = isa(kinematic, Tuple) ? kinematic : (kinematic,) # Allow single isotropic hardening law
     yld = default_yield_criteria(yield)
     return Plastic(elastic, yld, iso, kin, overstress, maxiter, tolerance)
 end
@@ -47,11 +47,11 @@ end
 MMB.get_vector_eltype(m::Plastic) = MMB.get_vector_eltype(m.elastic)
 
 # Definition of material state
-struct PlasticState{NKin,NIso,Tϵp,Tκ,Tβ} <: AbstractMaterialState
+struct PlasticState{NKin,NIso,Tϵp,Tκ<:NTuple{NIso},Tβ<:NTuple{NKin}} <: AbstractMaterialState
     # Useful to have different types here?
     ϵp::SymmetricTensor{2,3,Tϵp,6}
-    κ::NTuple{NIso, Tκ}
-    β::NTuple{NKin, SymmetricTensor{2,3,Tβ,6}}
+    κ::Tκ
+    β::Tβ
 end
 
 function MMB.initial_material_state(m::Plastic)
@@ -63,8 +63,8 @@ end
 
 MMB.get_vector_length(::PlasticState{NK, NI}) where {NK, NI} = NI + 6*(1+NK)
 MMB.get_num_statevars(m::Plastic) = length(m.isotropic) + 6*(1 + length(m.kinematic))
-function MMB.get_vector_eltype(::PlasticState{<:Any, <:Any, Tϵp, Tκ, Tβ}) where {Tϵp, Tκ, Tβ}
-    return promote_type(Tϵp, Tκ, Tβ)
+function MMB.get_vector_eltype(s::PlasticState{<:Any, <:Any, Tϵp}) where {Tϵp}
+    return promote_tuple_eltype(Tϵp, s.κ, s.β)
 end
 
 function MMB.tovector!(v::AbstractVector, s::PlasticState{NKin,NIso,Tϵp,Tκ,Tβ}; offset = 0) where {NKin,NIso,Tϵp,Tκ,Tβ}
@@ -84,15 +84,15 @@ function MMB.fromvector(v::AbstractVector, ::PlasticState{NKin,NIso}; offset = 0
     return PlasticState(ϵp, κ, β)
 end
 
-struct PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ,Tβ} <: AbstractResidual
+struct PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ<:NTuple{NIso},Tβ<:NTuple{NKin}} <: AbstractResidual
     σ::SymmetricTensor{2,3,Tσ,6}
     Δλ::Tλ
-    κ::NTuple{NIso, Tκ}
-    β::NTuple{NKin, SymmetricTensor{2,3,Tβ,6}}
+    κ::Tκ
+    β::Tβ
 end
 
-function MMB.get_vector_eltype(::PlasticResidual{<:Any, <:Any, Tσ, Tλ, Tκ, Tβ}) where {Tσ, Tλ, Tκ, Tβ}
-    return promote_type(Tσ, Tλ, Tκ, Tβ)
+function MMB.get_vector_eltype(r::PlasticResidual{<:Any, <:Any, Tσ, Tλ}) where {Tσ, Tλ}
+    return promote_tuple_eltype(promote_type(Tσ, Tλ), r.κ, r.β)
 end
 
 MMB.get_vector_length(::PlasticResidual{NKin,NIso}) where {NKin, NIso} = 7 + NIso + 6 * NKin
@@ -141,7 +141,7 @@ end
 function MMB.material_response(m::Plastic, ϵ::SymmetricTensor{2,3}, old::PlasticState{NKin,NIso}, Δt, cache, extras) where {NKin,NIso}
 
     σ_trial, dσdϵ_elastic = elastic_response(m, ϵ, old)
-    Φ_trial = yield_criterion(m.yield, σ_trial-sum(old.β), sum(old.κ))
+    Φ_trial = yield_criterion(m.yield, σ_trial - sum(old.β; init=zero(σ_trial)), sum(old.κ; init=0))
 
     if real(Φ_trial) < 0
         update_extras!(extras)
@@ -177,11 +177,11 @@ end
 
 # General residual function 
 function residual(x::PlasticResidual{NKin,NIso}, m::Plastic, old::PlasticState, ϵ, Δt, cache) where{NKin,NIso}
-    σ_red = x.σ - sum(x.β)
+    σ_red = x.σ - sum(x.β; init=zero(x.σ))
     ν = effective_stress_gradient(m.yield,  σ_red)
     ϵₑ = calculate_elastic_strain(old, ϵ, ν, x.Δλ)    # Using assumption of associative plasticity
 
-    κ = sum(x.κ)
+    κ = sum(x.κ; init=0)
     Φ = yield_criterion(m.yield, σ_red, κ)
     σy = initial_yield_limit(m.yield) + κ
 
@@ -201,7 +201,7 @@ function initial_guess(m::Plastic, old::PlasticState, ϵ)
 end
 
 function get_plastic_result(m::Plastic, x::PlasticResidual, old::PlasticState)
-    ν = effective_stress_gradient(m.yield,  x.σ - sum(x.β))
+    ν = effective_stress_gradient(m.yield,  x.σ - sum(x.β; init=zero(x.σ)))
     ϵp = old.ϵp + x.Δλ*ν
     return x.σ, PlasticState(ϵp, x.κ, x.β)
 end
@@ -215,8 +215,8 @@ function MMB.get_vector_length(m::Plastic)
     return sum((
         get_vector_length(m.elastic),
         get_vector_length(m.yield),
-        sum(get_vector_length, m.isotropic),
-        sum(get_vector_length, m.kinematic),
+        sum(get_vector_length, m.isotropic; init=0),
+        sum(get_vector_length, m.kinematic; init=0),
         get_vector_length(m.overstress)))
 end
 
@@ -269,14 +269,14 @@ function Base.show(io::IO, M::MIME"text/plain", m::Plastic)
     if length(m.kinematic) == 1
         print(io, "Kinematic hardening: ")
         show(io, M, m.kinematic[1])
-    else
+    elseif length(m.kinematic) > 1
         println(io, "Kinematic hardening laws:")
         foreach(kin->show(io, M, kin), m.kinematic)
     end
     if length(m.isotropic) == 1
         print(io, "Isotropic hardening: ")
         show(io, M, m.isotropic[1])
-    else    
+    elseif length(m.isotropic) > 1
         println(io, "Isotropic hardening laws:")
         foreach(iso->show(io, M, iso), m.isotropic)
     end

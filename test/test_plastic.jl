@@ -96,6 +96,44 @@
     end
 end
 
+@testset "Plastic with empty hardening" begin
+    # Omitting kinematic/isotropic (default ()) must give purely empty tuples of
+    # backstresses/isotropic variables, see #2.
+    e = LinearElastic(E=210.e3, ν=0.3)
+    σ_y0 = 150.0
+    kin = (ArmstrongFrederick(Hkin=5.e3, β∞=100.0),)
+    iso = (Voce(Hiso=20.e3, κ∞=200.0),)
+
+    for (isotropic, kinematic) in (((), kin), (iso, ()), ((), ()))
+        m = Plastic(;elastic=e, yield=σ_y0, isotropic, kinematic)
+        @test length(m.isotropic) == (isempty(isotropic) ? 0 : 1)
+        @test length(m.kinematic) == (isempty(kinematic) ? 0 : 1)
+
+        old = initial_material_state(m)
+        @test length(old.κ) == length(m.isotropic)
+        @test length(old.β) == length(m.kinematic)
+
+        # Vector round trip must work with the empty tuples.
+        v = tovector(m)
+        @test length(v) == get_vector_length(m)
+        @test fromvector(v, m) == m
+
+        # Showing the material must not error, nor print a stray empty header.
+        show_str = show_as_string(m)
+        @test !contains(show_str, "Kinematic hardening laws:\n\n")
+        @test !contains(show_str, "Isotropic hardening laws:\n\n")
+
+        # Run shear loading past yield; without hardening, the response is
+        # perfectly plastic (stays exactly at the initial yield limit).
+        s21, σ, dσdϵ, state, ϵ = run_shear(m, 0.01, 20)
+        @test !any(isnan, σ)
+        @test !any(isnan, dσdϵ)
+        if isempty(isotropic) && isempty(kinematic)
+            @test MechMat.vonmises(σ) ≈ σ_y0
+        end
+    end
+end
+
 @testset "SimplePlastic" begin
     # Run an example, compare with Plastic
     E = 210.e3;     ν = 0.3

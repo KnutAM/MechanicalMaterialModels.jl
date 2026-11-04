@@ -56,6 +56,43 @@ end
     end
 end
 
+@testset "Differentiate with empty hardening" begin
+    # differentiate_material! must also work when isotropic/kinematic hardening
+    # is omitted (empty κ/β tuples), see #2.
+    E = 210.e3
+    e = LinearElastic(E=E, ν=0.3)
+    σ_y0 = 150.0
+    kin = (ArmstrongFrederick(Hkin=5.e3, β∞=100.0),)
+    iso = (Voce(Hiso=20.e3, κ∞=200.0),)
+
+    for (isotropic, kinematic) in (((), kin), (iso, ()), ((), ()))
+        m1 = Plastic(elastic=e, yield=σ_y0, isotropic=isotropic, kinematic=kinematic, overstress=RateIndependent())
+
+        deriv = MechanicalMaterialModels.MaterialDerivatives(m1)
+        deriv_num = MechanicalMaterialModels.MaterialDerivatives(m1)
+        deriv_extra_output = allocate_differentiation_output(m1)
+        cache = allocate_material_cache(m1)
+
+        state = initial_material_state(m1)
+        ϵ = zero(SymmetricTensor{2,3})
+        Δt = 1.0
+        σ, dσdϵ, new_state = material_response(m1, ϵ, state, Δt, cache, deriv_extra_output)
+        @testset "Initial (NIso=$(length(m1.isotropic)), NKin=$(length(m1.kinematic)))" begin
+            test_numerical_derivative(deriv, deriv_num, m1, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
+        end
+
+        # Run until into the plastic regime
+        ϵ21 = 0.01
+        N = 100
+        s21, σ, dσdϵ, state, ϵ = run_shear(m1, ϵ21, N)
+        ϵ = ϵ*(N+1)/N
+        σ, dσdϵ, new_state = material_response(m1, ϵ, state, Δt, cache, deriv_extra_output)
+        @testset "Plastic (NIso=$(length(m1.isotropic)), NKin=$(length(m1.kinematic)))" begin
+            test_numerical_derivative(deriv, deriv_num, m1, ϵ, state, Δt, cache, deriv_extra_output, dσdϵ)
+        end
+    end
+end
+
 @testset "Numerical (3D material)" begin
         E = 210.e3
         ν = 0.3
