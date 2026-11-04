@@ -15,12 +15,12 @@ The parameters for this model are,
 * `ζ::Number`: Hardening saturation rate
 * `Hkin::Number`: Kinematic hardening modulus
 * `β∞::Number`: Kinematic saturation stress
-* `overstress`: An overstress function (`<:Overstress`) or `RateIndependent`.
+* `overstress`: An overstress function (`<:OverstressFunction`)
 
 See [Meyer (2020)](https://doi.org/10.1016/j.ijsolstr.2020.04.037) for a description of this model
 in a finite strain framework.
 """
-@kwdef struct CrystalPlasticity{C, E, T, OS, T_tol} <: AbstractMaterial
+@kwdef struct CrystalPlasticity{C, E, T, OS<:OverstressFunction, T_tol} <: AbstractMaterial
     crystal::C          # E.g. BCC, FCC, etc.
     elastic::E          # Elastic definition
     yield::T            # Initial yield limit
@@ -100,6 +100,7 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         rf(x) = residual(mat, x, old, ϵ, ν_trial, Δt)
         Δγ, ∂r∂x, converged = newtonsolve(rf, Δγ0; maxiter = mat.maxiter, tol = mat.tolerance)
         if converged
+            all(dγ -> dγ > -mat.tolerance, Δγ) || throw(MMB.NoLocalConvergence("Slip opposite to trial stress should not happen"))
             σ = calculate_stress(mat, Δγ, old, ϵ, ν_trial)
             # R(Δγ(ϵ), ϵ) = 0 => ∂R/∂x ∂γ/∂ϵ = - ∂R/∂ϵ
             # dσ/dϵ = ∂σ/∂ϵ + ∂σ/∂γ ∂γ/∂ϵ = ∂σ/∂ϵ - ∂σ/∂γ [∂R/∂x]⁻¹ ∂R/∂ϵ
