@@ -37,9 +37,9 @@ struct Plastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     maxiter::Int        # Maximum number of iterations for local problem (default 100)
     tolerance::T        # Absolute tolerance for local problem (default √eps(T))
 end
-function Plastic(;elastic, yield, isotropic=nothing, kinematic=nothing, overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_vector_eltype(elastic))))
-    iso = maketuple_or_nothing(isotropic)
-    kin = maketuple_or_nothing(kinematic)
+function Plastic(;elastic, yield, isotropic=(), kinematic=(), overstress=RateIndependent(), maxiter = 100, tolerance = sqrt(eps(MMB.get_vector_eltype(elastic))))
+    iso = isa(isotropic, Tuple) ? isotropic : (isotropic,) # Allow single isotropic hardening law
+    kin = isa(kinematic, Tuple) ? kinematic : (kinematic,) # Allow single isotropic hardening law
     yld = default_yield_criteria(yield)
     return Plastic(elastic, yld, iso, kin, overstress, maxiter, tolerance)
 end

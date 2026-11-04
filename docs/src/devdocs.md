@@ -6,7 +6,6 @@ CurrentModule = MechanicalMaterialModels
 The following functions and their docstrings may be helpful 
 for understanding the code, but these may change.
 ```@docs
-maketuple_or_nothing
 get_promoted_type
 promote_tuple_eltype
 baseof
