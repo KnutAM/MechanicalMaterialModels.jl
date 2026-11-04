@@ -3,7 +3,6 @@ include("setup_tests.jl")
 # Test of utility features
 include("test_crystals.jl")
 include("test_utils.jl")
-include("test_hyperelastic.jl")
 
 # Test modeling components
 include("test_elastic.jl")

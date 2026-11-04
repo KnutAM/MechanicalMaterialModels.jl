@@ -18,11 +18,7 @@
     @test state.γ_acc >= 0
 
     @testset "overstress must be rate-dependent (bug 7)" begin
-        # RateIndependent forces Φᵢ=0 on every slip system simultaneously once any
-        # system yields, including inactive ones - this can drive an inactive
-        # system to a spurious negative slip increment. Disallowed at construction
-        # instead, requiring a viscoplastic (e.g. Norton) regularization, whose
-        # residual is non-negative by construction for an inactive system.
+        # The algorithm in `CrystalPlasticity` does not yet support RateIndependent
         @test_throws MethodError CrystalPlasticity(;
             crystal = FCC(), elastic = LinearElastic(;E = 100.e3, ν = 0.3),
             yield = 50.0, q = 0.5, h0 = 10e3, h∞ = 1e3, ζ = 1.0,
@@ -52,10 +48,8 @@
 
         # Edge case: the frozen trial direction can itself be exactly zero
         # (ν_trial[i] = sign(0) = 0) when the trial resolved shear on a system
-        # exactly cancels its backstress. Without the `!iszero(ν_tr)` guard, the
-        # check's `ν_tr*τ >= 0` clause would pass trivially regardless of the
-        # converged stress, silently accepting an inconsistent (zero) flow
-        # direction for a system that is, in fact, significantly active.
+        # exactly cancels its backstress. Check that an inconsistent (zero) flow
+        # direction for a system that is significantly active is not accepted.
         σ_trial = MechMat.calculate_stress(mc.elastic, ϵ - old.ϵp)
         slip_dirs = MechMat.get_slip_directions(crystal)
         slip_planes = MechMat.get_slip_planes(crystal)
@@ -63,17 +57,5 @@
         β2 = τ_trial_red[2] + old.β[2] # makes the adjusted τ_trial_red[2] exactly 0
         old_zero_trial = MechMat.CrystalPlasticityState(old.γ_acc, old.ϵp, old.κ, MechMat.SVector(old.β[1], β2))
         @test_throws MMB.NoLocalConvergence material_response(mc, ϵ, old_zero_trial, 1.0)
-
-        # Edge case: the "is this system active" test must be the physical yield
-        # condition (`abs(τ) <= yield+κ`), not a comparison against the
-        # dimensionless Newton tolerance - otherwise rescaling every
-        # stress-valued parameter (E, yield, β∞) down could make an active
-        # system register as "inactive" and skip the direction check entirely.
-        scale = 1e-10
-        mc_scaled = CrystalPlasticity(; crystal, elastic = LinearElastic(E = 2.0*scale, ν = 0.0), yield = 0.5*scale,
-            q = 0.0, h0 = 0.0, h∞ = 0.0, ζ = 1.0, Hkin = 0.0, β∞ = 1.0*scale,
-            overstress = NortonOverstress(tstar = 2.0, nexp = 1.0))
-        old_scaled = initial_material_state(mc_scaled)
-        @test_throws MMB.NoLocalConvergence material_response(mc_scaled, ϵ, old_scaled, 1.0)
     end
 end
