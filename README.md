@@ -13,15 +13,7 @@ The `MechanicalMaterialModels.jl` package depends on the following unregistered 
 * [MaterialModelsBase.jl](https://github.com/KnutAM/MaterialModelsBase.jl)
 * [Newton.jl](https://github.com/KnutAM/Newton.jl)
 
-Those packages, as well as `MechanicalMaterialModels.jl` itself, is available in [knutamregistry](https://github.com/KnutAM/knutamregistry). 
-After adding this registry, the `MechanicalMaterialModels.jl` and its dependencies can be installed as other registered packages, i.e.
-```julia
-using Pkg
-Pkg.add("MechanicalMaterialModels")
-```
-
-If the registry is not added, it is necessary to install all 
-non-registered required packages, i.e.
+So to install, necessary to install all non-registered required packages, i.e.
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/KnutAM/Newton.jl")
