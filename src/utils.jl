@@ -7,14 +7,17 @@ e.g. `get_promoted_type(1, 1.f0)` is `Float32`
 get_promoted_type(args...) = promote_type(map(typeof, args)...)
 
 """
-    promote_tuple_eltype(::Type{T}, xs::Tuple) where {T}
+    promote_tuple_eltype(::Type{T}, xs::Tuple...) where {T}
 
-Fold over the entries of `xs` (`Number`s or `Tensors.jl` tensors), promoting `T`
+Fold over the entries in tuple in `xs` (`Number`s or `AbstractArrays`), promoting `T`
 with each entry's scalar element type. Returns `T` unchanged for an empty tuple.
 """
 promote_tuple_eltype(::Type{T}, ::Tuple{}) where {T} = T
 function promote_tuple_eltype(::Type{T}, xs::Tuple) where {T}
     return promote_tuple_eltype(promote_type(T, eltype(first(xs))), Base.tail(xs))
+end
+function promote_tuple_eltype(::Type{T}, xs::Tuple, args::Vararg{Tuple, N}) where N
+    return promote_tuple_eltype(promote_tuple_eltype(T, xs), args...)
 end
 
 """ 
