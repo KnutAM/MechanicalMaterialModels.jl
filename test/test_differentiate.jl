@@ -65,7 +65,7 @@ end
     kin = (ArmstrongFrederick(Hkin=5.e3, β∞=100.0),)
     iso = (Voce(Hiso=20.e3, κ∞=200.0),)
 
-    for (isotropic, kinematic) in ((nothing, kin), (iso, nothing), (nothing, nothing))
+    for (isotropic, kinematic) in (((), kin), (iso, ()), ((), ()))
         m1 = Plastic(elastic=e, yield=σ_y0, isotropic=isotropic, kinematic=kinematic, overstress=RateIndependent())
 
         deriv = MechanicalMaterialModels.MaterialDerivatives(m1)

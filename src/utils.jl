@@ -9,8 +9,10 @@ get_promoted_type(args...) = promote_type(map(typeof, args)...)
 """
     promote_tuple_eltype(::Type{T}, xs::Tuple...) where {T}
 
-Fold over the entries in tuple in `xs` (`Number`s or `AbstractArrays`), promoting `T`
-with each entry's scalar element type. Returns `T` unchanged for an empty tuple.
+Fold over the entries of each tuple in `xs` (`Number`s or `AbstractArray`s, e.g.
+`Tensors.jl` tensors), promoting `T` with every entry's scalar element type. Any
+number of tuples may be given; `T` is returned unchanged if none of them have any
+entries (e.g. all are empty, or `xs` itself is empty).
 """
 promote_tuple_eltype(::Type{T}, ::Tuple{}) where {T} = T
 function promote_tuple_eltype(::Type{T}, xs::Tuple) where {T}

@@ -64,8 +64,7 @@ end
 MMB.get_vector_length(::PlasticState{NK, NI}) where {NK, NI} = NI + 6*(1+NK)
 MMB.get_num_statevars(m::Plastic) = length(m.isotropic) + 6*(1 + length(m.kinematic))
 function MMB.get_vector_eltype(s::PlasticState{<:Any, <:Any, Tϵp}) where {Tϵp}
-    T = promote_tuple_eltype(Tϵp, s.κ)
-    return promote_tuple_eltype(T, s.β)
+    return promote_tuple_eltype(Tϵp, s.κ, s.β)
 end
 
 function MMB.tovector!(v::AbstractVector, s::PlasticState{NKin,NIso,Tϵp,Tκ,Tβ}; offset = 0) where {NKin,NIso,Tϵp,Tκ,Tβ}
@@ -93,8 +92,7 @@ struct PlasticResidual{NKin,NIso,Tσ,Tλ,Tκ<:NTuple{NIso},Tβ<:NTuple{NKin}} <:
 end
 
 function MMB.get_vector_eltype(r::PlasticResidual{<:Any, <:Any, Tσ, Tλ}) where {Tσ, Tλ}
-    T = promote_tuple_eltype(promote_type(Tσ, Tλ), r.κ)
-    return promote_tuple_eltype(T, r.β)
+    return promote_tuple_eltype(promote_type(Tσ, Tλ), r.κ, r.β)
 end
 
 MMB.get_vector_length(::PlasticResidual{NKin,NIso}) where {NKin, NIso} = 7 + NIso + 6 * NKin
