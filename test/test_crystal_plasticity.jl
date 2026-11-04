@@ -52,10 +52,10 @@
 
         # Edge case: the frozen trial direction can itself be exactly zero
         # (ν_trial[i] = sign(0) = 0) when the trial resolved shear on a system
-        # exactly cancels its backstress. A naive `ν_trial[i]*τ_conv[i] >= -tol`
-        # check would then pass trivially regardless of the converged stress,
-        # silently accepting an inconsistent (zero) flow direction for a system
-        # that is, in fact, significantly active.
+        # exactly cancels its backstress. Without the `!iszero(ν_tr)` guard, the
+        # check's `ν_tr*τ >= 0` clause would pass trivially regardless of the
+        # converged stress, silently accepting an inconsistent (zero) flow
+        # direction for a system that is, in fact, significantly active.
         σ_trial = MechMat.calculate_stress(mc.elastic, ϵ - old.ϵp)
         slip_dirs = MechMat.get_slip_directions(crystal)
         slip_planes = MechMat.get_slip_planes(crystal)
@@ -64,12 +64,11 @@
         old_zero_trial = MechMat.CrystalPlasticityState(old.γ_acc, old.ϵp, old.κ, MechMat.SVector(old.β[1], β2))
         @test_throws MMB.NoLocalConvergence material_response(mc, ϵ, old_zero_trial, 1.0)
 
-        # Edge case: the check must be scaled by the stress-like yield/backstress
-        # quantities, not compared against `mat.tolerance` directly (which bounds
-        # a dimensionless slip residual). Otherwise rescaling every stress-valued
-        # parameter (E, yield, β∞) down lets the same inconsistent solution pass
-        # silently, since the raw stress mismatch then falls below the
-        # (unscaled) tolerance.
+        # Edge case: the "is this system active" test must be the physical yield
+        # condition (`abs(τ) <= yield+κ`), not a comparison against the
+        # dimensionless Newton tolerance - otherwise rescaling every
+        # stress-valued parameter (E, yield, β∞) down could make an active
+        # system register as "inactive" and skip the direction check entirely.
         scale = 1e-10
         mc_scaled = CrystalPlasticity(; crystal, elastic = LinearElastic(E = 2.0*scale, ν = 0.0), yield = 0.5*scale,
             q = 0.0, h0 = 0.0, h∞ = 0.0, ζ = 1.0, Hkin = 0.0, β∞ = 1.0*scale,

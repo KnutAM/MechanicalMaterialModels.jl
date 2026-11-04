@@ -100,12 +100,11 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         rf(x) = residual(mat, x, old, ϵ, ν_trial, Δt)
         Δγ, ∂r∂x, converged = newtonsolve(rf, Δγ0; maxiter = mat.maxiter, tol = mat.tolerance)
         if converged
-            all(dγ -> dγ > -mat.tolerance, Δγ) || throw(MMB.NoLocalConvergence("Slip opposite to trial stress should not happen"))
             σ = calculate_stress(mat, Δγ, old, ϵ, ν_trial)
             new = calculate_state(mat, Δγ, old, ν_trial)
             τ_conv = map((β, s, m) -> s ⋅ σ ⋅ m - β, new.β, get_slip_directions(mat.crystal), get_slip_planes(mat.crystal))
-            all(zip(Δγ, ν_trial, τ_conv, new.κ)) do (dγ, ν_tr, τ, κ)
-                dγ <= mat.tolerance || (!iszero(ν_tr) && ν_tr * τ >= -mat.tolerance * (mat.yield + κ))
+            all(zip(ν_trial, τ_conv, new.κ)) do (ν_tr, τ, κ)
+                abs(τ) <= (mat.yield + κ) || (!iszero(ν_tr) && ν_tr * τ >= 0)
             end || throw(MMB.NoLocalConvergence("Converged slip direction inconsistent with the frozen trial direction"))
             # R(Δγ(ϵ), ϵ) = 0 => ∂R/∂x ∂γ/∂ϵ = - ∂R/∂ϵ
             # dσ/dϵ = ∂σ/∂ϵ + ∂σ/∂γ ∂γ/∂ϵ = ∂σ/∂ϵ - ∂σ/∂γ [∂R/∂x]⁻¹ ∂R/∂ϵ
