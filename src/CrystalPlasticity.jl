@@ -15,12 +15,12 @@ The parameters for this model are,
 * `ζ::Number`: Hardening saturation rate
 * `Hkin::Number`: Kinematic hardening modulus
 * `β∞::Number`: Kinematic saturation stress
-* `overstress`: An overstress function (`<:Overstress`) or `RateIndependent`.
+* `overstress`: An overstress function (`<:OverstressFunction`)
 
 See [Meyer (2020)](https://doi.org/10.1016/j.ijsolstr.2020.04.037) for a description of this model
 in a finite strain framework.
 """
-@kwdef struct CrystalPlasticity{C, E, T, OS, T_tol} <: AbstractMaterial
+@kwdef struct CrystalPlasticity{C, E, T, OS<:OverstressFunction, T_tol} <: AbstractMaterial
     crystal::C          # E.g. BCC, FCC, etc.
     elastic::E          # Elastic definition
     yield::T            # Initial yield limit
@@ -101,12 +101,18 @@ function MMB.material_response(mat::CrystalPlasticity, ϵ::SymmetricTensor{2,3},
         Δγ, ∂r∂x, converged = newtonsolve(rf, Δγ0; maxiter = mat.maxiter, tol = mat.tolerance)
         if converged
             σ = calculate_stress(mat, Δγ, old, ϵ, ν_trial)
+            new = calculate_state(mat, Δγ, old, ν_trial)
+            τred = map((β, s, m) -> s ⋅ σ ⋅ m - β, new.β, get_slip_directions(mat.crystal), get_slip_planes(mat.crystal))
+            all(zip(ν_trial, τred, new.κ)) do (ν_tr, τr, κ)
+                # Elastic (anything ok)    or plastic: check correct sign(ν_tr)
+                abs(τr) <= (mat.yield + κ) || ν_tr == sign(τr)
+            end || throw(MMB.NoLocalConvergence("Converged slip direction inconsistent with the frozen trial direction"))
             # R(Δγ(ϵ), ϵ) = 0 => ∂R/∂x ∂γ/∂ϵ = - ∂R/∂ϵ
             # dσ/dϵ = ∂σ/∂ϵ + ∂σ/∂γ ∂γ/∂ϵ = ∂σ/∂ϵ - ∂σ/∂γ [∂R/∂x]⁻¹ ∂R/∂ϵ
             ∂σ∂γ = ForwardDiff.jacobian(γ -> tomandel(SVector, calculate_stress(mat, γ, old, ϵ, ν_trial)), Δγ)
             ∂r∂ϵ = ForwardDiff.jacobian(e -> residual(mat, Δγ, old, frommandel(SymmetricTensor{2,3}, e), ν_trial, Δt), tomandel(SVector, ϵ))
             dσdϵ = mat.elastic.C - frommandel(SymmetricTensor{4,3}, ∂σ∂γ * (∂r∂x \ ∂r∂ϵ))
-            return σ, dσdϵ, calculate_state(mat, Δγ, old, ν_trial)
+            return σ, dσdϵ, new
         else
             throw(MMB.NoLocalConvergence("$(typeof(mat)): newtonsolve! didn't converge, ϵ = ", ϵ))
         end
