@@ -47,7 +47,12 @@ function _rotation_tensor(r::Vec{3, T}) where T
 end
 
 function _rodrigues_coefficients(θsq)
-    if θsq < 1.0e-8
+    # Switch to the Taylor series below θ ~ sqrt(eps), i.e. θsq ~ eps, which is
+    # where 1 - cos(θ) starts losing significant digits to cancellation in the
+    # direct formula below. Scaled to the working precision (via the type of
+    # θsq) rather than a fixed Float64 tolerance, so this also behaves
+    # correctly for e.g. Float32/Float16 rotation vectors.
+    if θsq < eps(float(typeof(θsq)))
         a = 1 - θsq / 6 * (1 - θsq / 20 * (1 - θsq / 42))
         b = (1 - θsq / 12 * (1 - θsq / 30 * (1 - θsq / 56))) / 2
     else
