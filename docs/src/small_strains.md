@@ -29,6 +29,9 @@ Maxwell
 Plastic
 ```
 
+The approach used to differentiate the material response of `Plastic` wrt. its
+parameters follows the methodology described by [MeyerEkre2023](@cite).
+
 ### [Theory](@id ssp_theory)
 While the exact model response is given by the laws in `elastic`, `yield`, `isotropic`, `kinematic`, and `overstress`,
 the generic model equations are described below. 

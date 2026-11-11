@@ -1,7 +1,10 @@
 using MechanicalMaterialModels
 using Documenter
+using DocumenterCitations
 
 DocMeta.setdocmeta!(MechanicalMaterialModels, :DocTestSetup, :(using MechanicalMaterialModels); recursive=true)
+
+bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style=:numeric)
 
 makedocs(;
     modules=[MechanicalMaterialModels],
@@ -22,7 +25,9 @@ makedocs(;
         "Utility Functions" => "utility_functions.md",
         "Examples" => "example.md",
         "Developer Docs" => "devdocs.md",
+        "References" => "references.md",
     ],
+    plugins=[bib],
 )
 
 deploydocs(;

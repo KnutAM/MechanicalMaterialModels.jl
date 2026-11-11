@@ -27,6 +27,8 @@ m = Plastic(elastic = LinearElastic(E=210.e3, ν=0.3),
             overstress = NortonOverstress(;tstar=1.0, nexp=2.0))
 ```
 
+If you use the feature of differentiating the material response wrt. the parameters,
+please cite [Meyer and Ekre (2023)](https://doi.org/10.1016/j.jmps.2023.105416) for the methodology.
 """
 struct Plastic{E,YLD,IsoH,KinH,OS,T} <: AbstractMaterial
     elastic::E          # Elastic definition
