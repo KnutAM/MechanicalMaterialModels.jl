@@ -1,6 +1,7 @@
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterCitations = "daee34ce-89f3-4625-b898-19384cb65244"
 LiveServer = "16fef848-5104-11e9-1b77-fb7a48bbb589"
 MaterialModelsBase = "af893363-701d-44dc-8b1e-d9a2c129bfc9"
 MechanicalMaterialModels = "b3282f9b-607f-4337-ab95-e5488ab5652c"
@@ -9,4 +10,5 @@ Tensors = "48a634ad-e948-5137-8d70-aa71f2a747f4"
 
 [sources]
 MaterialModelsBase = {url = "https://github.com/knutam/MaterialModelsBase.jl"}
+MechanicalMaterialModels = {path = ".."}
 Newton = {url = "https://github.com/knutam/Newton.jl"}
